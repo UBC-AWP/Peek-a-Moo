@@ -57,7 +57,7 @@ filter_cows <- function(df, col, cow_selection) {
     filter({{ col }} %in% cow_selection)
 }
 
-# load in plot/table creation scripts
+# # load in plot/table creation scripts
 source(here::here("R/notifications.R"))
 source(here::here("R/activities.R"))
 source(here::here("R/daily_behavior.R"))
@@ -67,7 +67,6 @@ source(here::here("R/bins.R"))
 source(here::here("R/THI_analysis.R"))
 
 # load data if not already in memory
-
 if (!exists("THI")) {
   load(here::here("data/Wali_trial_summarized_THI.Rda"))
   load(here::here("data/Feeding_and_drinking_analysis.Rda"))
@@ -81,13 +80,14 @@ if (!exists("THI")) {
   load(here::here("data/feed_replacement_10mon_CD.Rda"))
   load(here::here("data/bin_empty_total_time_summary.Rda"))
   load(here::here("data/Feeding_drinking_at_the_same_time_total_time.Rda"))
-  load(here::here("data/Feeding_drinking_neighbour_total_time.Rda"))
+  load(here::here("data/Feeding_drinking_neighbour_total.Rda"))
   load(here::here("data/Replacement_behaviour_by_date.Rda"))
 
   THI <- master_summary
 
   rm(master_summary)
 }
+
 # create dataframes for plots and tables
 standing_bout_df <- lying_standing_summary_by_date
 feed_drink_df <- Feeding_and_drinking_analysis
@@ -154,10 +154,10 @@ date_range_widget <- function(inputId) {
   dateRangeInput(
     inputId = inputId,
     label = "Date Range",
-    start = lubridate::as_date("2021-5-1"),
-    end = lubridate::as_date("2021-5-4"),
-    min = lubridate::as_date("2020-7-13"),
-    max = lubridate::as_date("2021-6-12")
+    start = lubridate::as_date("2020-8-1"),
+    end = lubridate::as_date("2020-8-14"),
+    min = lubridate::as_date("2020-8-1"),
+    max = lubridate::as_date("2020-8-14")
   )
 }
 
@@ -207,8 +207,8 @@ date_widget <- function(inputId) {
   dateInput(
     inputId = inputId,
     label = "Date",
-    value = lubridate::as_date("2021-5-1"),
-    max = lubridate::as_date("2021-6-12")
+    value = lubridate::as_date("2020-8-1"),
+    max = lubridate::as_date("2020-8-14")
   )
 }
 

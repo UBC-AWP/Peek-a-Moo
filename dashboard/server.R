@@ -1,7 +1,76 @@
+library(googledrive)
+library(filesstrings)
+
 # Set up shiny server
 shinyServer(function(input, output, session) {
 
+  # # authorize google drive
+  # drive_auth(email = 'allyson.m.stoll@gmail.com')
+  # files <- drive_ls('~/capstone_data/') 
+  # 
+  # # download files from drive
+  # for (i in 1:nrow(files)) {
+  #   file <- files$id[i] 
+  #   name <- files$name[i]
+  #   
+  #   drive_download(as_id(file),
+  #                  path = paste("data/", name, sep =""),
+  #                  overwrite = TRUE)
+  # }
+  
+  file_upload <- eventReactive(input$DataFiles, { })
+  
+  file_processing <- reactive({
+    req(input$DataFiles)
+    
+    filedf <- input$DataFiles
+    
+    # check if data directory exists, make one if not
+    # if(!dir.exists("temp_data/")) {
+    #   dir.create("temp_data/")
+    # }
+    
+    # Relocate files to data
+    for (i in 1:nrow(filedf)) {
+      # file.move(filedf$datapath[i], "temp_data/", overwrite = TRUE)
+      load(filedf$datapath[i], envir = .GlobalEnv)
+    }
+    
+  })
+  
+  observeEvent(file_processing(), {
+    
+    master_summary <<- master_summary
+    Feeding_and_drinking_analysis <<- Feeding_and_drinking_analysis
+    Insentec_warning <<- Insentec_warning
+    non_nutritive_visits <<- non_nutritive_visits
+    Cleaned_drinking_original_data <<- Cleaned_drinking_original_data
+    Cleaned_feeding_original_data <<- Cleaned_feeding_original_data
+    bin_empty_total_time_summary <<- bin_empty_total_time_summary
+    synchronized_lying_total_time <<- synchronized_lying_total_time
+    Feeding_drinking_at_the_same_time_total_time <<- Feeding_drinking_at_the_same_time_total_time
+    Feeding_drinking_neighbour_total_time <<- Feeding_drinking_neighbour_total_time
+    Replacement_behaviour_by_date <<- Replacement_behaviour_by_date
+    duration_for_each_bout <<- duration_for_each_bout
+    lying_standing_summary_by_date <<- lying_standing_summary_by_date
+    master_feed_replacement_all <<- master_feed_replacement_all
+    
+    standing_bout_df <<- lying_standing_summary_by_date
+    feed_drink_df <<- Feeding_and_drinking_analysis
+    non_nutritive_df <<- convert_date_col(non_nutritive_visits)
+    feeding_intake_df <<- Feeding_and_drinking_analysis
+    feed_df <<- convert_date_col(Cleaned_feeding_original_data)
+    max_date <<- max(feed_drink_df[["date"]])
+    replacement_df <<- master_feed_replacement_all
+    
+    THI <<- master_summary
+    rm(master_summary)
+    
+    session$reload()
+  })
+  
   # Warning section
+    
   observe({
     warning_df <- combine_warnings(
       food_cuttoff = input$food_intake,
@@ -95,7 +164,7 @@ shinyServer(function(input, output, session) {
       
       nodes <- combine_nodes(edges, deg)
       
-      if (mean(edges$width > 2)) {
+      if (mean(edges$width) > 2) {
         edges$width <- edges$width / 2
       }
       
@@ -133,7 +202,7 @@ shinyServer(function(input, output, session) {
           CD_max = input$cd_range[[2]]
         )
         edges$width <- edges$weight
-        if (mean(edges$width > 2)) {
+        if (mean(edges$width) > 2) {
           edges$width <- edges$width / 2
         }
         
@@ -157,7 +226,7 @@ shinyServer(function(input, output, session) {
 
         nodes <- combine_replace_nodes(edges, deg)
         
-        if (mean(edges$width > 2)) {
+        if (mean(edges$width) > 2) {
           edges$width <- edges$width / 2
         }
 
@@ -240,7 +309,8 @@ shinyServer(function(input, output, session) {
     # Render daily behavior plot
     df <- daily_schedu_moo_data(feeding, drinking, lying_standing, cow_id = input$daily_cow_selection, date = input$daily_date)
     output$daily_table <- format_dt_table(drop_na(df, Cow))
-    output$daily_plot <- renderPlotly(daily_schedu_moo_plot(df))
+    output$daily_plot <- renderPlotly(
+      daily_schedu_moo_plot(df))
   })
 
   observe({
@@ -305,4 +375,5 @@ shinyServer(function(input, output, session) {
       hunger_plot(df)
     })
   })
-})
+  })
+
