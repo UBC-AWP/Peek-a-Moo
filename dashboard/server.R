@@ -1,35 +1,17 @@
 library(shinymanager)
 library(googleCloudStorageR)
 
-# passphrase <- Sys.getenv("PASSPHRASE")
-
-credentials <- data.frame(
-  user = c("guest", "shiny", "shinymanager"), # mandatory
-  password = c("guest", "shiny", "shinymanager"), # mandatory
-  admin = c(FALSE, FALSE, TRUE),
-  stringsAsFactors = FALSE
-)
+passphrase <- Sys.getenv("PASSPHRASE")
 
 # Set up shiny server
 server <- function(input, output, session) {
-  
-  # # authentication module
-  # res_auth <- callModule(
-  #   module = auth_server,
-  #   id = "auth",
-  #   check_credentials = check_credentials(
-  #     credentials #,
-  #     # here::here("auth/database.sqlite"),
-  #     # passphrase = passphrase
-  #     )
-  # )
   
   # check_credentials directly on sqlite db
   res_auth <- secure_server(
     check_credentials = check_credentials(
       credentials
-      # "../auth/database.sqlite",
-      # passphrase = passphrase
+      here::here("auth/database.sqlite"),
+      passphrase = passphrase
     )
   )
   
@@ -39,7 +21,7 @@ server <- function(input, output, session) {
   
   file_download <- reactive({
     # download data from GCP
-    gcs_auth(json_file = '../auth/peek-a-moo.json')
+    gcs_auth(json_file = here::here('auth/peek-a-moo.json'))
     
     print('set gcp bucket')
     gcs_global_bucket("peek-a-moo-data")
@@ -47,18 +29,18 @@ server <- function(input, output, session) {
     objects <- gcs_list_objects()
     download_list <- grep("*.Rda", objects$name, value = TRUE)
     
-    if (!dir.exists("../data/")) {
-      dir.create("../data/")
+    if (!dir.exists(here::here("data/"))) {
+      dir.create(here::here("data/"))
       map(download_list, function(x) gcs_get_object(x,
-        saveToDisk = paste('../data/', gsub(".*/","",x), sep = ""),
+        saveToDisk = here::here(paste('data/', gsub(".*/","",x), sep = "")),
         overwrite = TRUE))
     }
     
-    check_files = list.files('../data/')
+    check_files = list.files(here::here('data/'))
     
     if (!length(check_files) > 0) {
       map(download_list, function(x) gcs_get_object(x,
-        saveToDisk = paste('../data/', gsub(".*/","",x), sep = ""),
+        saveToDisk = here::here(paste('data/', gsub(".*/","",x), sep = "")),
         overwrite = TRUE))
     }
     
@@ -70,20 +52,20 @@ server <- function(input, output, session) {
     
     # load data if not already in memory
     if (!exists("THI")) {
-      load("../data/Wali_trial_summarized_THI.Rda", envir = .GlobalEnv)
-      load("../data/Feeding_and_drinking_analysis.Rda", envir = .GlobalEnv)
-      load("../data/Insentec_warning.Rda", envir = .GlobalEnv)
-      load("../data/duration_for_each_bout.Rda", envir = .GlobalEnv)
-      load("../data/lying_standing_summary_by_date.Rda", envir = .GlobalEnv)
-      load("../data/synchronized_lying_total_time.Rda", envir = .GlobalEnv)
-      load("../data/Cleaned_drinking_original_data.Rda", envir = .GlobalEnv)
-      load("../data/Cleaned_feeding_original_data.Rda", envir = .GlobalEnv)
-      load("../data/non_nutritive_visits.Rda", envir = .GlobalEnv)
-      load("../data/feed_replacement_10mon_CD.Rda", envir = .GlobalEnv)
-      load("../data/bin_empty_total_time_summary.Rda", envir = .GlobalEnv)
-      load("../data/Feeding_drinking_at_the_same_time_total_time.Rda", envir = .GlobalEnv)
-      load("../data/Feeding_drinking_neighbour_total.Rda", envir = .GlobalEnv)
-      load("../data/Replacement_behaviour_by_date.Rda", envir = .GlobalEnv)
+      load(here::here("data/Wali_trial_summarized_THI.Rda", envir = .GlobalEnv))
+      load(here::here("data/Feeding_and_drinking_analysis.Rda", envir = .GlobalEnv))
+      load(here::here("data/Insentec_warning.Rda", envir = .GlobalEnv))
+      load(here::here("data/duration_for_each_bout.Rda", envir = .GlobalEnv))
+      load(here::here("data/lying_standing_summary_by_date.Rda", envir = .GlobalEnv))
+      load(here::here("data/synchronized_lying_total_time.Rda", envir = .GlobalEnv))
+      load(here::here("data/Cleaned_drinking_original_data.Rda", envir = .GlobalEnv))
+      load(here::here("data/Cleaned_feeding_original_data.Rda", envir = .GlobalEnv))
+      load(here::here("data/non_nutritive_visits.Rda", envir = .GlobalEnv))
+      load(here::here("data/feed_replacement_10mon_CD.Rda", envir = .GlobalEnv))
+      load(here::here("data/bin_empty_total_time_summary.Rda", envir = .GlobalEnv))
+      load(here::here("data/Feeding_drinking_at_the_same_time_total_time.Rda", envir = .GlobalEnv))
+      load(here::here("data/Feeding_drinking_neighbour_total.Rda", envir = .GlobalEnv))
+      load(here::here("data/Replacement_behaviour_by_date.Rda", envir = .GlobalEnv))
     }
     
     print("making dataframes")

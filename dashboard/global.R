@@ -58,24 +58,14 @@ filter_cows <- function(df, col, cow_selection) {
 }
 
 # load in plot/table creation scripts
-source("../R/notifications.R")
-source("../R/activities.R")
-source("../R/daily_behavior.R")
-source("../R/network.R")
-source("../R/elo.R")
-source("../R/bully_analysis.R")
-source("../R/bins.R")
-source("../R/THI_analysis.R")
-
-# load in plot/table creation scripts
-# source(here::here("R/notifications.R"))
-# source(here::here("R/activities.R"))
-# source(here::here("R/daily_behavior.R"))
-# source(here::here("R/network.R"))
-# source(here::here("R/elo.R"))
-# source(here::here("R/bully_analysis.R"))
-# source(here::here("R/bins.R"))
-# source(here::here("R/THI_analysis.R"))
+source(here::here("R/notifications.R"))
+source(here::here("R/activities.R"))
+source(here::here("R/daily_behavior.R"))
+source(here::here("R/network.R"))
+source(here::here("R/elo.R"))
+source(here::here("R/bully_analysis.R"))
+source(here::here("R/bins.R"))
+source(here::here("R/THI_analysis.R"))
 
 # download data from GCP
 # gcs_auth(json_file = here::here('auth/peek-a-moo.json'))
