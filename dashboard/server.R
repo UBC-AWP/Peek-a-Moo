@@ -9,7 +9,6 @@ server <- function(input, output, session) {
   # check_credentials directly on sqlite db
   res_auth <- secure_server(
     check_credentials = check_credentials(
-      credentials
       here::here("auth/database.sqlite"),
       passphrase = passphrase
     )
@@ -19,92 +18,92 @@ server <- function(input, output, session) {
     reactiveValuesToList(res_auth)
   })
   
-  file_download <- reactive({
-    # download data from GCP
-    gcs_auth(json_file = here::here('auth/peek-a-moo.json'))
-    
-    print('set gcp bucket')
-    gcs_global_bucket("peek-a-moo-data")
-    
-    objects <- gcs_list_objects()
-    download_list <- grep("*.Rda", objects$name, value = TRUE)
-    
-    if (!dir.exists(here::here("data/"))) {
-      dir.create(here::here("data/"))
-      map(download_list, function(x) gcs_get_object(x,
-        saveToDisk = here::here(paste('data/', gsub(".*/","",x), sep = "")),
-        overwrite = TRUE))
-    }
-    
-    check_files = list.files(here::here('data/'))
-    
-    if (!length(check_files) > 0) {
-      map(download_list, function(x) gcs_get_object(x,
-        saveToDisk = here::here(paste('data/', gsub(".*/","",x), sep = "")),
-        overwrite = TRUE))
-    }
-    
-  })
+  # file_download <- reactive({
+  #   # download data from GCP
+  #   gcs_auth(json_file = '../auth/peek-a-moo.json')
+  #   
+  #   print('set gcp bucket')
+  #   gcs_global_bucket("peek-a-moo-data")
+  #   
+  #   objects <- gcs_list_objects()
+  #   download_list <- grep("*.Rda", objects$name, value = TRUE)
+  #   
+  #   if (!dir.exists("../data/")) {
+  #     dir.create("../data/")
+  #     map(download_list, function(x) gcs_get_object(x,
+  #       saveToDisk = paste('../data/', gsub(".*/","",x), sep = ""),
+  #       overwrite = TRUE))
+  #   }
+  #   
+  #   check_files = list.files('../data/')
+  #   
+  #   if (!length(check_files) > 0) {
+  #     map(download_list, function(x) gcs_get_object(x,
+  #       saveToDisk = paste('../data/', gsub(".*/","",x), sep = ""),
+  #       overwrite = TRUE))
+  #   }
+  #   
+  # })
   
-  file_processing <- eventReactive(file_download(), {
-    
-    print("loading data")
-    
-    # load data if not already in memory
-    if (!exists("THI")) {
-      load(here::here("data/Wali_trial_summarized_THI.Rda", envir = .GlobalEnv))
-      load(here::here("data/Feeding_and_drinking_analysis.Rda", envir = .GlobalEnv))
-      load(here::here("data/Insentec_warning.Rda", envir = .GlobalEnv))
-      load(here::here("data/duration_for_each_bout.Rda", envir = .GlobalEnv))
-      load(here::here("data/lying_standing_summary_by_date.Rda", envir = .GlobalEnv))
-      load(here::here("data/synchronized_lying_total_time.Rda", envir = .GlobalEnv))
-      load(here::here("data/Cleaned_drinking_original_data.Rda", envir = .GlobalEnv))
-      load(here::here("data/Cleaned_feeding_original_data.Rda", envir = .GlobalEnv))
-      load(here::here("data/non_nutritive_visits.Rda", envir = .GlobalEnv))
-      load(here::here("data/feed_replacement_10mon_CD.Rda", envir = .GlobalEnv))
-      load(here::here("data/bin_empty_total_time_summary.Rda", envir = .GlobalEnv))
-      load(here::here("data/Feeding_drinking_at_the_same_time_total_time.Rda", envir = .GlobalEnv))
-      load(here::here("data/Feeding_drinking_neighbour_total.Rda", envir = .GlobalEnv))
-      load(here::here("data/Replacement_behaviour_by_date.Rda", envir = .GlobalEnv))
-    }
-    
-    print("making dataframes")
-    
-    master_summary <<- master_summary
-    Feeding_and_drinking_analysis <<- Feeding_and_drinking_analysis
-    Insentec_warning <<- Insentec_warning
-    non_nutritive_visits <<- non_nutritive_visits
-    Cleaned_drinking_original_data <<- Cleaned_drinking_original_data
-    Cleaned_feeding_original_data <<- Cleaned_feeding_original_data
-    bin_empty_total_time_summary <<- bin_empty_total_time_summary
-    synchronized_lying_total_time <<- synchronized_lying_total_time
-    Feeding_drinking_at_the_same_time_total_time <<- Feeding_drinking_at_the_same_time_total_time
-    Feeding_drinking_neighbour_total_time <<- Feeding_drinking_neighbour_total_time
-    Replacement_behaviour_by_date <<- Replacement_behaviour_by_date
-    duration_for_each_bout <<- duration_for_each_bout
-    lying_standing_summary_by_date <<- lying_standing_summary_by_date
-    master_feed_replacement_all <<- master_feed_replacement_all
-    
-    standing_bout_df <<- lying_standing_summary_by_date
-    feed_drink_df <<- Feeding_and_drinking_analysis
-    non_nutritive_df <<- convert_date_col(non_nutritive_visits)
-    feeding_intake_df <<- Feeding_and_drinking_analysis
-    feed_df <<- convert_date_col(Cleaned_feeding_original_data)
-    max_date <<- max(feed_drink_df[["date"]])
-    replacement_df <<- master_feed_replacement_all
-    
-    THI <<- master_summary
-    
-    print(master_summary)
-    
-    rm(master_summary, envir = .GlobalEnv)
-  })
+  # file_processing <- eventReactive(file_download(), {
+  #   
+  #   print("loading data")
+  #   
+  #   # load data if not already in memory
+  #   if (!exists("THI")) {
+  #     load("../data/Wali_trial_summarized_THI.Rda", envir = .GlobalEnv)
+  #     load("../data/Feeding_and_drinking_analysis.Rda", envir = .GlobalEnv)
+  #     load("../data/Insentec_warning.Rda", envir = .GlobalEnv)
+  #     load("../data/duration_for_each_bout.Rda", envir = .GlobalEnv)
+  #     load("../data/lying_standing_summary_by_date.Rda", envir = .GlobalEnv)
+  #     load("../data/synchronized_lying_total_time.Rda", envir = .GlobalEnv)
+  #     load("../data/Cleaned_drinking_original_data.Rda", envir = .GlobalEnv)
+  #     load("../data/Cleaned_feeding_original_data.Rda", envir = .GlobalEnv)
+  #     load("../data/non_nutritive_visits.Rda", envir = .GlobalEnv)
+  #     load("../data/feed_replacement_10mon_CD.Rda", envir = .GlobalEnv)
+  #     load("../data/bin_empty_total_time_summary.Rda", envir = .GlobalEnv)
+  #     load("../data/Feeding_drinking_at_the_same_time_total_time.Rda", envir = .GlobalEnv)
+  #     load("../data/Feeding_drinking_neighbour_total.Rda", envir = .GlobalEnv)
+  #     load("../data/Replacement_behaviour_by_date.Rda", envir = .GlobalEnv)
+  #   }
+  #   
+  #   print("making dataframes")
+  #   
+  #   master_summary <<- master_summary
+  #   Feeding_and_drinking_analysis <<- Feeding_and_drinking_analysis
+  #   Insentec_warning <<- Insentec_warning
+  #   non_nutritive_visits <<- non_nutritive_visits
+  #   Cleaned_drinking_original_data <<- Cleaned_drinking_original_data
+  #   Cleaned_feeding_original_data <<- Cleaned_feeding_original_data
+  #   bin_empty_total_time_summary <<- bin_empty_total_time_summary
+  #   synchronized_lying_total_time <<- synchronized_lying_total_time
+  #   Feeding_drinking_at_the_same_time_total_time <<- Feeding_drinking_at_the_same_time_total_time
+  #   Feeding_drinking_neighbour_total_time <<- Feeding_drinking_neighbour_total_time
+  #   Replacement_behaviour_by_date <<- Replacement_behaviour_by_date
+  #   duration_for_each_bout <<- duration_for_each_bout
+  #   lying_standing_summary_by_date <<- lying_standing_summary_by_date
+  #   master_feed_replacement_all <<- master_feed_replacement_all
+  #   
+  #   standing_bout_df <<- lying_standing_summary_by_date
+  #   feed_drink_df <<- Feeding_and_drinking_analysis
+  #   non_nutritive_df <<- convert_date_col(non_nutritive_visits)
+  #   feeding_intake_df <<- Feeding_and_drinking_analysis
+  #   feed_df <<- convert_date_col(Cleaned_feeding_original_data)
+  #   max_date <<- max(feed_drink_df[["date"]])
+  #   replacement_df <<- master_feed_replacement_all
+  #   
+  #   THI <<- master_summary
+  #   
+  #   print(master_summary)
+  #   
+  #   rm(master_summary, envir = .GlobalEnv)
+  # })
 
-  obs_release <- eventReactive(file_processing(), {
-    ui_obs.resume()
-  })
+  # obs_release <- eventReactive(file_processing(), {
+  #   ui_obs.resume()
+  # })
   
-  ui_obs <- observe(suspended = TRUE, {
+  # ui_obs <- observe(suspended = TRUE, {
   
   # Warning section
   observe({
@@ -484,5 +483,5 @@ server <- function(input, output, session) {
       hunger_plot(df)
     })
   })
- })
+# })
 }

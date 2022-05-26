@@ -198,9 +198,11 @@ ui <- secure_app(ui,
                    # add image on top ?
                    tags_top = 
                      tags$div(
-                       tags$h4("Demo", style = "align:center"),
+                       tags$h2("Peek-a-Moo\nDashboard", style = "align:center"),
                        tags$img(
-                         src = "https://www.r-project.org/logo/Rlogo.png", width = 100
+                         src = "../loading_cow1.gif", width = 100),
+                       tags$p(
+                         "General visitors can enter using 'guest' as the user name and password."
                        )),
                    # add information on bottom ?
                    tags_bottom = tags$div(
