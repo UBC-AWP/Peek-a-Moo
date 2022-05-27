@@ -1,3 +1,5 @@
+library(shinymanager)
+
 header <- dashboardHeader(
   title = "Dairy Cow Dashboard",
   dropdownMenuOutput("notifications")
@@ -8,13 +10,12 @@ sidebar <- dashboardSidebar(
     id = "sidemenu",
     menuItem("Activity Patterns", icon = icon("chart-line"), tabName = "activities"),
     menuItem("Daily Behavior", icon = icon("calendar"), tabName = "daily_behavior"),
-    menuItem(HTML(paste("&nbsp; Relationships")), icon = icon("connectdevelop"), tabName = "relationships"),
-    menuItem("Displacement Star", icon = icon("sun"), tabName = "star"),
+    menuItem("Relationships", icon = icon("connectdevelop"), tabName = "relationships"),
     menuItem("Bins", icon = icon("chart-bar"), tabName = "bins"),
-    menuItem("Warnings", icon = icon("warning"), tabName = "warnings"),
+    menuItem("Warnings", icon = icon("exclamation-triangle"), tabName = "warnings"),
     menuItem("Source code",
       icon = icon("file-code"),
-      href = "https://github.com/MOO-VIS/Peek-a-Moo"
+      href = "https://github.com/UBC-AWP/Peek-a-Moo"
     )
   )
 )
@@ -191,4 +192,25 @@ body <- dashboardBody(
   )
 )
 
-shinyUI(dashboardPage(header, sidebar, body, skin = "blue"))
+ui <- fluidPage(dashboardPage(header, sidebar, body, skin = "blue"))
+
+ui <- secure_app(ui,
+                   # add image on top ?
+                   tags_top = 
+                     tags$div(
+                       tags$h2("Peek-a-Moo\nDashboard", style = "align:center"),
+                       tags$img(
+                         src = "../loading_cow1.gif", width = 100),
+                       tags$p(
+                         "General visitors can contact Borbala for user name and password."
+                       )),
+                   # add information on bottom ?
+                   tags_bottom = tags$div(
+                     tags$p(
+                       "For any question, please  contact ",
+                       tags$a(
+                         href = "mailto:someone@example.com?Subject=Shiny%20aManager",
+                         target="_top", "administrator"
+                       ))),
+                 enable_admin = FALSE,
+                 download = NULL)

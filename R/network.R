@@ -1,9 +1,14 @@
 library(igraph)
 
-plot_network <- function(nodes, edges) {
+plot_network <- function(nodes, edges, threshold_id = "10%") {
+  ledges <- data.frame(color = c("#D3D3D3", "white"), 
+                       label = c(paste0("Edges with top ", threshold_id, " weights"), "Hidden edges"), 
+                       arrows =c("both", "both"), 
+                       font.align = "bottom") 
+  
   visNetwork(nodes,
-             edges,
-             width = "100%", height = "800px"
+    edges,
+    width = "100%", height = "800px"
   ) %>%
     visNodes(
       font = list(size = 30),
@@ -18,19 +23,26 @@ plot_network <- function(nodes, edges) {
     visEdges(
       smooth = list(enabled = TRUE, type = "horizontal"),
       color = list(color = "#D3D3D3", highlight = "orange", hover = "#2B7CE9")
-    )  %>% 
-    visInteraction(hover = TRUE, 
-                   tooltipDelay = 100, 
-                   tooltipStay = 300, 
-                   dragNodes = FALSE,
-                   selectable = FALSE,
-                   selectConnectedEdges = FALSE) %>%
+    ) %>%
+    visLegend(addEdges = ledges, useGroups = FALSE) %>%
+    visInteraction(
+      hover = TRUE,
+      tooltipDelay = 100,
+      tooltipStay = 300,
+      dragNodes = FALSE,
+      selectable = FALSE,
+      selectConnectedEdges = FALSE
+    ) %>%
     visIgraphLayout(layout = "layout_in_circle") %>%
-    visPhysics(stabilization = FALSE)
+    visPhysics(stabilization = FALSE) %>%
+    visExport(
+      type = "png", name = "export-network",
+      float = "left", label = "Save network", background = "white", style = ""
+    )
 }
 
-plot_network_disp <- function(nodes, edges) {
-  plot_network(nodes, edges) %>%
+plot_network_disp <- function(nodes, edges, threshold_id = "10%") {
+  plot_network(nodes, edges, threshold_id = threshold_id) %>%
     visNodes(
       shape = "dot"
     ) %>%
@@ -45,11 +57,13 @@ plot_network_disp <- function(nodes, edges) {
         hideColor = "rgba(0,0,0,0)",
         labelOnly = TRUE
       )
-    ) %>% 
-    visInteraction(dragNodes = TRUE, 
-                   multiselect = TRUE,
-                   selectable = TRUE,
-                   selectConnectedEdges = TRUE)
+    ) %>%
+    visInteraction(
+      dragNodes = TRUE,
+      multiselect = TRUE,
+      selectable = TRUE,
+      selectConnectedEdges = TRUE
+    )
 }
 
 plot_network_disp_star <- function(nodes, edges) {
@@ -65,10 +79,16 @@ plot_network_disp_star <- function(nodes, edges) {
       color = list(hightlight = "#D2E5FF", highlight.border = "#2B7CE9")
     ) %>%
     visEdges(arrows = list(to = list(enabled = TRUE, scaleFactor = 0.5))) %>%
-    visInteraction(hover = TRUE, 
-                   tooltipDelay = 100, 
-                   tooltipStay = 300) %>% 
-    visPhysics(stabilization = FALSE)
+    visInteraction(
+      hover = TRUE,
+      tooltipDelay = 100,
+      tooltipStay = 300
+    ) %>%
+    visPhysics(stabilization = FALSE) %>%
+    visExport(
+      type = "png", name = "export-network",
+      float = "left", label = "Save network", background = "white", style = ""
+    )
 }
 
 combine_edges <- function(x, from_date = NULL, to_date = NULL, threshold = 0.9) {
@@ -90,12 +110,12 @@ combine_edges <- function(x, from_date = NULL, to_date = NULL, threshold = 0.9) 
     summarise(weight = sum(weight, na.rm = TRUE)) %>%
     ungroup() %>%
     mutate(weight_bins = cut(weight,
-                             breaks = c(
-                               min(weight),
-                               quantile(weight, threshold),
-                               max(weight)
-                             ),
-                             include.lowest = TRUE, ordered = TRUE
+      breaks = c(
+        min(weight),
+        quantile(weight, threshold),
+        max(weight)
+      ),
+      include.lowest = TRUE, ordered = TRUE
     )) %>%
     mutate(
       width = as.integer(weight_bins) - 1,
@@ -111,11 +131,11 @@ combine_edges <- function(x, from_date = NULL, to_date = NULL, threshold = 0.9) 
 
 # combine dataframe for displacement data and create edges list (displacement)
 combine_replace_edges <- function(x,
-                                 from_date = NULL,
-                                 to_date = NULL,
-                                 CD_min = NULL,
-                                 CD_max = NULL,
-                                 threshold = 0.9) {
+                                  from_date = NULL,
+                                  to_date = NULL,
+                                  CD_min = NULL,
+                                  CD_max = NULL,
+                                  threshold = 0.9) {
 
   # set defaults
   from_date <- from_date %||% -Inf
@@ -160,11 +180,11 @@ combine_replace_edges <- function(x,
 
 # combine dataframe for displacement data and create edges list (star version)
 combine_replace_edges_star <- function(x,
-                                      from_date = NULL,
-                                      to_date = NULL,
-                                      cow_id = NULL,
-                                      CD_min = NULL,
-                                      CD_max = NULL) {
+                                       from_date = NULL,
+                                       to_date = NULL,
+                                       cow_id = NULL,
+                                       CD_min = NULL,
+                                       CD_max = NULL) {
 
   # set defaults
   from_date <- from_date %||% -Inf
@@ -192,10 +212,11 @@ combine_replace_edges_star <- function(x,
     ungroup() %>%
     mutate(
       type = case_when(
-      from == cow_id ~ "actor",
-      to == cow_id ~ "reactor"
-    ),
-      title = paste0("Actions: ", weight)) %>%
+        from == cow_id ~ "actor",
+        to == cow_id ~ "reactor"
+      ),
+      title = paste0("Actions: ", weight)
+    ) %>%
     arrange(from != cow_id)
 }
 
@@ -204,7 +225,7 @@ combine_nodes <- function(edges, deg) {
   nodes <- data.frame(id = unique(c(
     edges$from,
     edges$to
-  ))) %>% 
+  ))) %>%
     mutate(
       size = unname(deg) / max(unname(deg)) * 40, # Node size
       label = id
@@ -216,7 +237,7 @@ combine_replace_nodes <- function(edges, deg) {
   nodes <- data.frame(id = unique(c(
     edges$from,
     edges$to
-  ))) %>% 
+  ))) %>%
     mutate(
       size = unname(deg) / max(unname(deg)) * 40, # Node size
       title = paste0("Cow: ", id, "<br>Different Associations: ", unname(deg))
@@ -229,16 +250,16 @@ combine_replace_nodes_star <- function(edges, cow_id = NULL) {
     group_by(to) %>%
     summarise(deg = sum(weight)) %>%
     rename(id = to)
-  
+
   nodes_size_from <- edges %>%
     group_by(from) %>%
-    summarise(deg = sum(weight)) %>% 
+    summarise(deg = sum(weight)) %>%
     rename(id = from)
-  
-  nodes_size <- rbind(nodes_size_to, nodes_size_from) %>% 
+
+  nodes_size <- rbind(nodes_size_to, nodes_size_from) %>%
     group_by(id) %>%
     summarise(deg = sum(deg))
-  
+
   nodes <- data.frame(id = unique(c(
     edges$from,
     edges$to
@@ -248,13 +269,13 @@ combine_replace_nodes_star <- function(edges, cow_id = NULL) {
         id == cow_id ~ "orange",
         id != cow_id ~ "#D2E5FF"
       ),
-      color.border  = case_when(
+      color.border = case_when(
         id == cow_id ~ "darkred",
         id != cow_id ~ "#2B7CE9"
       ),
       label = paste(id)
-    ) %>% 
-    left_join(nodes_size, by = "id") %>% 
+    ) %>%
+    left_join(nodes_size, by = "id") %>%
     mutate(
       size = case_when(
         id == cow_id ~ 20,
@@ -316,9 +337,8 @@ adjacency_to_long <- function(x, upper_only = FALSE) {
 #'
 #' @return error_message if there is a date input issue that needs to stop the graph generation
 missing_date_range_check <- function(date_range, df = NULL, network = NULL) {
-  
   `%!in%` <- Negate(`%in%`)
-  
+
   if (!(network %in% c("Displacement", "Displacement Star*"))) {
     df_dates <- names(df)
     df_dates <- as.Date(df_dates, format = "%Y-%m-%d")
@@ -362,12 +382,12 @@ missing_date_range_check <- function(date_range, df = NULL, network = NULL) {
     }
     if (date_range[[1]] %in% df_dates && date_range[[2]] %in% df_dates) {
       range_of_df <- df_dates[which(df_dates == date_range[[1]]):which(df_dates == date_range[[2]])]
-      
+
       range_days <- seq(as.Date(date_range[[1]]),
-                        as.Date(date_range[[2]]),
-                        by = "days"
+        as.Date(date_range[[2]]),
+        by = "days"
       )
-      
+
       if (all(range_days %in% range_of_df) == FALSE) {
         showNotification(
           type = "warning",

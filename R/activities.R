@@ -7,6 +7,7 @@
 #'
 #' @return Filtered dataframe with additional stats
 process_range_data <- function(df, agg_type, cow_selection, date_range){
+  if (is.null(agg_type)) agg_type = 'day'
   
   # convert Cow col to character to add summary stats later and filter by date
   df <- df %>%
@@ -34,7 +35,7 @@ process_range_data <- function(df, agg_type, cow_selection, date_range){
   
   # convert Cow to factor
   df$Cow <- factor(df$Cow) %>%
-    fct_rev()
+    forcats::fct_rev()
   
   df
 }

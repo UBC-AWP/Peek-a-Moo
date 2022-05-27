@@ -5,6 +5,8 @@
 #'
 #' @return Dataframe containing a row for each date with warning messages
 intake_warnings <- function(df, cuttoff){
+  if (is.null(cuttoff)) cuttoff = 0
+  
   convert_date_col(df) %>%
     mutate(date = as.Date(date)) %>%
     group_by(Cow, date) %>%
@@ -16,6 +18,8 @@ intake_warnings <- function(df, cuttoff){
 }
 
 bin_warnings <- function(df, cuttoff){
+  if (is.null(cuttoff)) cuttoff = 0
+    
   convert_date_col(df) %>%
     mutate(date = as.Date(date)) %>%
     group_by(Bin, date) %>%

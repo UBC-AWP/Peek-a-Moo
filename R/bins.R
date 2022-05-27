@@ -5,6 +5,8 @@
 #' @param bin_selection Bins to include in data frame
 #' @return Grouped data frame for particular date chosen and summarized values.
 select_feed_bin_data <- function(df, feed_date, bin_selection) {
+  # if (is.null(feed_date)) feed_date = lubridate::as_date("2020-8-1")
+  
   ## feed bin plot section
   df <- df %>%
     mutate(
