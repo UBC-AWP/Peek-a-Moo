@@ -12,6 +12,7 @@ library(igraph)
 library(lubridate)
 library(png)
 library(visNetwork)
+library(reshape2)
 
 #' Helper function for converting dataframes to having dates in a single column
 #'
