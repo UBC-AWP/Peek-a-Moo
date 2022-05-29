@@ -7,6 +7,7 @@
 #'
 #' @return Filtered dataframe with additional stats
 process_range_data <- function(df, agg_type, cow_selection, date_range){
+  if (is.null(agg_type)) agg_type = 'day'
   
   # convert Cow col to character to add summary stats later and filter by date
   df <- df %>%
@@ -19,7 +20,8 @@ process_range_data <- function(df, agg_type, cow_selection, date_range){
     group_by(date) %>%
     summarise(.,
               across(where(is.character), ~"Herd Average"),
-              across(where(is.numeric), mean, na.rm=TRUE))
+              across(where(is.numeric), mean, na.rm=TRUE),
+              across(where(is.numeric), round, 0))
   
   # filter by cow and add summary rows
   df <- df %>%
@@ -27,12 +29,13 @@ process_range_data <- function(df, agg_type, cow_selection, date_range){
     group_by(Cow, date) %>%
     summarise(.,
               across(where(is.character), ~"Herd Average"),
-              across(where(is.numeric), mean, na.rm=TRUE)) %>%
-    bind_rows(herd_average) 
+              across(where(is.numeric), mean, na.rm=TRUE),
+              across(where(is.numeric), round, 0)) %>%
+    bind_rows(herd_average)
   
   # convert Cow to factor
   df$Cow <- factor(df$Cow) %>%
-    fct_rev()
+    forcats::fct_rev()
   
   df
 }

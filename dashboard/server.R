@@ -1,14 +1,31 @@
-# Set up shiny server
-shinyServer(function(input, output, session) {
+library(shinymanager)
 
+passphrase <- Sys.getenv("PASSPHRASE")
+
+# Set up shiny server
+server <- function(input, output, session) {
+  
+  # check_credentials directly on sqlite db
+  res_auth <- secure_server(
+    check_credentials = check_credentials(
+      "../auth/database.sqlite",
+      passphrase = passphrase
+    )
+  )
+  
+  output$auth_output <- renderPrint({
+    reactiveValuesToList(res_auth)
+  })
+  
   # Warning section
   observe({
+    
     warning_df <- combine_warnings(
       food_cuttoff = input$food_intake,
       water_cuttoff = input$water_intake,
       bin_cuttoff = input$bin_volume
     )
-
+    
     output$warning_table <- format_dt_table(warning_df, page_length = 20)
 
     output$warning_plot <- DT::renderDataTable(
@@ -242,10 +259,10 @@ shinyServer(function(input, output, session) {
     #' @param y_col The column of interest
     #' @param var_name The name of the UI output variable
     plot_cow_date_range <- function(df, y_col, var_name) {
-
+    
       # filter table
       df <- process_range_data(df, input$activity_agg_type, input$activity_cow_selection, input$activity_date_range)
-
+      
       # generate table
       output[[paste0(var_name, "_table")]] <- format_dt_table(df)
 
@@ -291,20 +308,43 @@ shinyServer(function(input, output, session) {
       "feed_intake"
     )
   })
-
+  
   observe({
     req(input$daily_date)
     req(input$daily_cow_selection)
-
+    
     # Create feeding, drinking, and lying_standing dataframes
     feeding <- Cleaned_feeding_original_data
     drinking <- Cleaned_drinking_original_data
     lying_standing <- duration_for_each_bout
-
+    
     # Render daily behavior plot
     df <- daily_schedu_moo_data(feeding, drinking, lying_standing, cow_id = input$daily_cow_selection, date = input$daily_date)
-    output$daily_table <- format_dt_table(drop_na(df, Cow))
+    df_1 <- df %>%
+      mutate(Time = as.character(df$Time))
+    output$daily_table <- format_dt_table(drop_na(df_1, Cow))
     output$daily_plot <- renderPlotly(daily_schedu_moo_plot(df))
+  })
+  
+  observe({
+    req(input$daily_date)
+    req(input$daily_cow_selection)
+    
+    # Create feeding, drinking, and lying_standing dataframes
+    feeding <- Cleaned_feeding_original_data
+    drinking <- Cleaned_drinking_original_data
+    lying_standing <- duration_for_each_bout
+    
+    # Render daily total behavior plot
+    df <- daily_schedu_moo_data(feeding, drinking, lying_standing, cow_id = input$daily_cow_selection, date = input$daily_date)
+    df_1 <- df %>%
+      mutate(time_for_total = as.integer(df$Time - lag(df$Time))) %>%
+      select(c("Cow", "Behaviour", "time_for_total")) %>%
+      drop_na() %>%
+      group_by(Behaviour) %>%
+      summarise(Total_Time = sum(time_for_total))
+    output$daily_total_table <- format_dt_table(df_1)
+    output$daily_total_plot <- renderPlotly(daily_total_schedumoo_plot(df))
   })
 
   observe({
@@ -322,10 +362,10 @@ shinyServer(function(input, output, session) {
   observe({
     req(input$relationship_date_range)
 
-    df <- THI_analysis(THI)
+    df <- THI_analysis(THI, input$relationship_date_range[[1]], input$relationship_date_range[[2]])
     output$THI_table <- format_dt_table(df)
     output$THI_plot <- renderPlotly({
-      plot_THI_analysis(df, input$relationship_date_range[[1]], input$relationship_date_range[[2]])
+      plot_THI_analysis(df)
     })
   })
 
@@ -369,4 +409,4 @@ shinyServer(function(input, output, session) {
       hunger_plot(df)
     })
   })
-})
+}

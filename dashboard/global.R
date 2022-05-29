@@ -1,5 +1,9 @@
 library(Rcpp)
-library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(forcats)
+library(stringr)
 library(shiny)
 library(shinydashboard)
 library(shinyWidgets)
@@ -7,8 +11,19 @@ library(plotly)
 library(igraph)
 library(lubridate)
 library(png)
-library(grid)
 library(visNetwork)
+library(googleCloudStorageR)
+library(reshape2)
+
+# load in plot/table creation scripts
+source("../R/notifications.R")
+source("../R/activities.R")
+source("../R/daily_behavior.R")
+source("../R/network.R")
+source("../R/elo.R")
+source("../R/bully_analysis.R")
+source("../R/bins.R")
+source("../R/THI_analysis.R")
 
 #' Helper function for converting dataframes to having dates in a single column
 #'
@@ -16,10 +31,69 @@ library(visNetwork)
 #'
 #' @return Dataframe with dates in a single date column
 convert_date_col <- function(df) {
-  enframe(df, name = "date") %>%
+  tibble::enframe(df, name = "date") %>%
     mutate(date = as.Date(date)) %>%
     unnest(value)
 }
+
+# download data from GCP
+  gcs_auth(json_file = '../auth/peek-a-moo.json')
+  
+  gcs_global_bucket("peek-a-moo-data")
+  
+  objects <- gcs_list_objects()
+  download_list <- grep("*.Rda", objects$name, value = TRUE)
+  
+  if (!dir.exists("../data/")) {
+    dir.create("../data/")
+    map(download_list, function(x) gcs_get_object(x,
+      saveToDisk = paste('../data/', gsub(".*/","",x), sep = ""),
+      overwrite = TRUE))
+  }
+  
+  check_files = list.files('../data/')
+  
+  if (!length(check_files) > 0) {
+    map(download_list, function(x) gcs_get_object(x,
+      saveToDisk = paste('../data/', gsub(".*/","",x), sep = ""),
+      overwrite = TRUE))
+  }
+
+# load data if not already in memory
+if (!exists("THI")) {
+  load("../data/Wali_trial_summarized_THI.Rda")
+  load("../data/Feeding_and_drinking_analysis.Rda")
+  load("../data/Insentec_warning.Rda")
+  load("../data/duration_for_each_bout.Rda")
+  load("../data/lying_standing_summary_by_date.Rda")
+  load("../data/synchronized_lying_total_time.Rda")
+  load("../data/Cleaned_drinking_original_data.Rda")
+  load("../data/Cleaned_feeding_original_data.Rda")
+  load("../data/non_nutritive_visits.Rda")
+  load("../data/feed_replacement_10mon_CD.Rda")
+  load("../data/bin_empty_total_time_summary.Rda")
+  load("../data/Feeding_drinking_at_the_same_time_total_time.Rda")
+  load("../data/Feeding_drinking_neighbour_total.Rda")
+  load("../data/Replacement_behaviour_by_date.Rda")
+  load("../data/_10-mon__elo_all_replacements_long_noNA.Rda")
+  
+  THI <- master_summary
+  
+  rm(master_summary)
+}
+
+# create dataframes for plots and tables
+standing_bout_df <- lying_standing_summary_by_date
+feed_drink_df <- Feeding_and_drinking_analysis
+non_nutritive_df <- convert_date_col(non_nutritive_visits)
+feeding_intake_df <- Feeding_and_drinking_analysis
+feed_df <- convert_date_col(Cleaned_feeding_original_data)
+max_date <- max(feed_drink_df[["date"]])
+replacement_df <- master_feed_replacement_all
+dominance_df <- elo_24h_na_filled
+
+max_date <- max(feed_drink_df[["date"]])
+min_date <- min(feed_drink_df[["date"]])
 
 #' Helper function to filter by user input date range
 #'
@@ -29,6 +103,8 @@ convert_date_col <- function(df) {
 #'
 #' @return Filtered dataframe with only dates within selected range
 filter_dates <- function(df, col, date_obj) {
+  if (is.null(date_obj)) date_obj <- list(min_date, max_date)
+  
   if (length(date_obj) > 1) {
     df %>%
       filter({{ col }} >= date_obj[[1]]) %>%
@@ -56,49 +132,6 @@ filter_cows <- function(df, col, cow_selection) {
   df %>%
     filter({{ col }} %in% cow_selection)
 }
-
-# load in plot/table creation scripts
-source(here::here("R/notifications.R"))
-source(here::here("R/activities.R"))
-source(here::here("R/daily_behavior.R"))
-source(here::here("R/network.R"))
-source(here::here("R/elo.R"))
-source(here::here("R/bully_analysis.R"))
-source(here::here("R/bins.R"))
-source(here::here("R/THI_analysis.R"))
-
-# load data if not already in memory
-
-if (!exists("THI")) {
-  load(here::here("data/Wali_trial_summarized_THI.Rda"))
-  load(here::here("data/Feeding_and_drinking_analysis.Rda"))
-  load(here::here("data/Insentec_warning.Rda"))
-  load(here::here("data/duration_for_each_bout.Rda"))
-  load(here::here("data/lying_standing_summary_by_date.Rda"))
-  load(here::here("data/synchronized_lying_total_time.Rda"))
-  load(here::here("data/Cleaned_drinking_original_data.Rda"))
-  load(here::here("data/Cleaned_feeding_original_data.Rda"))
-  load(here::here("data/non_nutritive_visits.Rda"))
-  load(here::here("data/feed_replacement_10mon_CD.Rda"))
-  load(here::here("data/bin_empty_total_time_summary.Rda"))
-  load(here::here("data/Feeding_drinking_at_the_same_time_total_time.Rda"))
-  load(here::here("data/Feeding_drinking_neighbour_total_time.Rda"))
-  load(here::here("data/Replacement_behaviour_by_date.Rda"))
-  load(here::here("data/_10-mon__elo_all_replacements_long_noNA.rda"))
-  
-  THI <- master_summary
-
-  rm(master_summary)
-}
-# create dataframes for plots and tables
-standing_bout_df <- lying_standing_summary_by_date
-feed_drink_df <- Feeding_and_drinking_analysis
-non_nutritive_df <- convert_date_col(non_nutritive_visits)
-feeding_intake_df <- Feeding_and_drinking_analysis
-feed_df <- convert_date_col(Cleaned_feeding_original_data)
-max_date <- max(feed_drink_df[["date"]])
-replacement_df <- master_feed_replacement_all
-dominance_df <- elo_24h_na_filled
 
 #' Helper function for creating boxes with plot and data tab
 #'
@@ -132,6 +165,7 @@ default_tabBox <- function(title, var_name, width = 6, height = "500px", output_
 format_dt_table <- function(df, page_length = 5) {
   DT::renderDataTable(
     df,
+    server = FALSE,
     extensions = "Buttons",
     options = list(
       scrollX = TRUE,
@@ -141,6 +175,16 @@ format_dt_table <- function(df, page_length = 5) {
     )
   )
 }
+
+#' #' Helper function to format dates to strings for export
+#' #'
+#' #' @param df The dataframe to convert
+#' #'
+#' #' @return df with converted column
+#' format_dt_table <- function(df) {
+#'   df <- df %>%
+#'     mutate(df$Time = as.character(Time))
+#' }
 
 # widget helper functions:
 aggregation_widget <- function(inputId) {
@@ -157,10 +201,10 @@ date_range_widget <- function(inputId) {
   dateRangeInput(
     inputId = inputId,
     label = "Date Range",
-    start = lubridate::as_date("2021-5-1"),
-    end = lubridate::as_date("2021-5-4"),
-    min = lubridate::as_date("2020-7-13"),
-    max = lubridate::as_date("2021-6-12")
+    start = lubridate::as_date("2020-8-1"),
+    end = lubridate::as_date("2020-8-14"),
+    min = lubridate::as_date(min_date),
+    max = lubridate::as_date(max_date)
   )
 }
 
@@ -210,8 +254,8 @@ date_widget <- function(inputId) {
   dateInput(
     inputId = inputId,
     label = "Date",
-    value = lubridate::as_date("2021-5-1"),
-    max = lubridate::as_date("2021-6-12")
+    value = lubridate::as_date("2020-8-1"),
+    max = lubridate::as_date("2020-8-14")
   )
 }
 

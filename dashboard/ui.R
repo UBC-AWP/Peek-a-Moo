@@ -1,3 +1,5 @@
+library(shinymanager)
+
 header <- dashboardHeader(
   title = "Dairy Cow Dashboard",
   dropdownMenuOutput("notifications")
@@ -10,10 +12,10 @@ sidebar <- dashboardSidebar(
     menuItem("Daily Behavior", icon = icon("calendar"), tabName = "daily_behavior"),
     menuItem(HTML(paste("&nbsp; Relationships")), icon = icon("connectdevelop"), tabName = "relationships"),
     menuItem("Bins", icon = icon("chart-bar"), tabName = "bins"),
-    menuItem("Warnings", icon = icon("warning"), tabName = "warnings"),
+    menuItem("Warnings", icon = icon("exclamation-triangle"), tabName = "warnings"),
     menuItem("Source code",
       icon = icon("file-code"),
-      href = "https://github.com/MOO-VIS/Peek-a-Moo"
+      href = "https://github.com/UBC-AWP/Peek-a-Moo"
     )
   )
 )
@@ -57,11 +59,14 @@ daily_tab <- tabItem(
       title = "Customizations", width = 12, solidHeader = TRUE, status = "primary", collapsible = TRUE,
       column(4, date_widget("daily_date")),
       column(4, cow_selection_widget("daily_cow_selection")),
-      column(4, h5(br(), "Please select a valid date and cow(s) to view the plot below"))
+      column(4, h5(br(), "Please select a valid date and cow(s) to generate the plots below"))
     )
   ),
   fluidRow(
     default_tabBox("Daily Behavior", "daily", width = 12)
+  ),
+  fluidRow(
+    default_tabBox("Daily Behaviour Totals", "daily_total", width = 12)
   ),
 )
 
@@ -183,4 +188,25 @@ body <- dashboardBody(
   )
 )
 
-shinyUI(dashboardPage(header, sidebar, body, skin = "blue"))
+ui <- fluidPage(dashboardPage(header, sidebar, body, skin = "blue"))
+
+ui <- secure_app(ui,
+                   # add image on top ?
+                   tags_top = 
+                     tags$div(
+                       tags$h2("Peek-a-Moo\nDashboard", style = "align:center"),
+                       tags$img(
+                         src = "../loading_cow1.gif", width = 100),
+                       tags$p(
+                         "General visitors can contact Borbala for user name and password."
+                       )),
+                   # add information on bottom ?
+                   tags_bottom = tags$div(
+                     tags$p(
+                       "For any question, please  contact ",
+                       tags$a(
+                         href = "mailto:someone@example.com?Subject=Shiny%20aManager",
+                         target="_top", "administrator"
+                       ))),
+                 enable_admin = FALSE,
+                 download = NULL)
