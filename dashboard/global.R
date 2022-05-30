@@ -15,7 +15,7 @@ library(visNetwork)
 library(googleCloudStorageR)
 library(reshape2)
 
-# load in plot/table creation scripts
+#load in plot/table creation scripts
 source("../R/notifications.R")
 source("../R/activities.R")
 source("../R/daily_behavior.R")
@@ -38,21 +38,21 @@ convert_date_col <- function(df) {
 
 # download data from GCP
   gcs_auth(json_file = '../auth/peek-a-moo.json')
-  
+
   gcs_global_bucket("peek-a-moo-data")
-  
+
   objects <- gcs_list_objects()
   download_list <- grep("*.Rda", objects$name, value = TRUE)
-  
+
   if (!dir.exists("../data/")) {
     dir.create("../data/")
     map(download_list, function(x) gcs_get_object(x,
       saveToDisk = paste('../data/', gsub(".*/","",x), sep = ""),
       overwrite = TRUE))
   }
-  
+
   check_files = list.files('../data/')
-  
+
   if (!length(check_files) > 0) {
     map(download_list, function(x) gcs_get_object(x,
       saveToDisk = paste('../data/', gsub(".*/","",x), sep = ""),
@@ -76,9 +76,9 @@ if (!exists("THI")) {
   load("../data/Feeding_drinking_neighbour_total.Rda")
   load("../data/Replacement_behaviour_by_date.Rda")
   load("../data/_10-mon__elo_all_replacements_long_noNA.Rda")
-  
+
   THI <- master_summary
-  
+
   rm(master_summary)
 }
 
@@ -88,7 +88,6 @@ feed_drink_df <- Feeding_and_drinking_analysis
 non_nutritive_df <- convert_date_col(non_nutritive_visits)
 feeding_intake_df <- Feeding_and_drinking_analysis
 feed_df <- convert_date_col(Cleaned_feeding_original_data)
-max_date <- max(feed_drink_df[["date"]])
 replacement_df <- master_feed_replacement_all
 dominance_df <- elo_24h_na_filled
 
@@ -162,55 +161,31 @@ default_tabBox <- function(title, var_name, width = 6, height = "500px", output_
 #' @param page_length Number of pages to show, defaults to 5
 #'
 #' @return DT datatable
-format_dt_table <- function(df, page_length = 5, user){
-  if(is.null(user) == TRUE){
+format_dt_table <- function(df, page_length = 5, data_config) {
+  if ((length(data_config) == 3 && data_config[[3]] == "t") || is.null(data_config)) {
+    . <- c("Data access is limited to Admin and user only.")
+    df <- data.frame(.)
+
     DT::renderDataTable(
       df,
-      extensions = "Buttons",
       server = FALSE,
-      options = list(
-        scrollX = TRUE,
-        pageLength = page_length,
-        dom = "Bftip",
-        buttons = c("csv")
-      )
+      options = data_config
     )
-  } else if (user == "guest"){
-    error_message <- c("Data access is limited to Admin users only.")
-    df_em <- data.frame(error_message)
-    DT::renderDataTable(
-      df_em,
-      options = list(
-        scrollX = TRUE,
-        pageLength = 1,
-        dom = 't'
-      )
-    )
-  } else{
+  } else if ((length(data_config) == 3 && data_config[[3]] == "Bftip")) {
     DT::renderDataTable(
       df,
-      extensions = "Buttons",
       server = FALSE,
-      options = list(
-        scrollX = TRUE,
-        pageLength = page_length,
-        dom = "Bftip",
-        buttons = c("csv")
-      )
+      options = data_config
+    )
+  } else {
+    DT::renderDataTable(
+      df,
+      server = FALSE,
+      extensions = "Buttons",
+      options = data_config
     )
   }
 }
-
-#' #' Helper function to format dates to strings for export
-#' #'
-#' #' @param df The dataframe to convert
-#' #'
-#' #' @return df with converted column
-#' format_dt_table <- function(df) {
-#'   df <- df %>%
-#'     mutate(df$Time = as.character(Time))
-#' }
-
 # widget helper functions:
 aggregation_widget <- function(inputId) {
   radioButtons(
