@@ -272,7 +272,7 @@ observeEvent(user(),{
               plot_network_disp_star(nodes, edges)
             })
             
-            output$network_table <- format_dt_table(edges %>% select(c(from, to, weight)), data_config = data_config)
+            output$network_table <- format_dt_table(edges %>% select(c(from, to, weight, type)), data_config = data_config)
           }
         }
       }
@@ -289,8 +289,8 @@ observeEvent(user(),{
 
     output$elo_plot <- renderPlotly({
       plot_elo(raw_graph_data,
-        input$star_date_range[[1]],
-        input$star_date_range[[2]],
+        input$relationship_date_range[[1]],
+        input$relationship_date_range[[2]],
         cow_id = cow_id) %>%
         config(modeBarButtonsToRemove = config)
     })
