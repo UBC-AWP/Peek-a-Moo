@@ -244,7 +244,7 @@ observeEvent(user(),{
               plot_network_disp(nodes, edges, threshold_id)
             })
 
-            output$network_table <- format_dt_table(edges %>% select(c(from, to, weight)))
+            output$network_table <- format_dt_table(edges %>% select(c(from, to, weight)), data_config = data_config)
           } else {
             
             cow_id <- input$star_cow_selection
@@ -472,3 +472,4 @@ observeEvent(user(),{
     })
   })
 }
+
