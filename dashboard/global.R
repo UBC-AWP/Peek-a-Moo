@@ -162,18 +162,43 @@ default_tabBox <- function(title, var_name, width = 6, height = "500px", output_
 #' @param page_length Number of pages to show, defaults to 5
 #'
 #' @return DT datatable
-format_dt_table <- function(df, page_length = 5) {
-  DT::renderDataTable(
-    df,
-    server = FALSE,
-    extensions = "Buttons",
-    options = list(
-      scrollX = TRUE,
-      pageLength = page_length,
-      dom = "Bftip",
-      buttons = c("csv")
+format_dt_table <- function(df, page_length = 5, user){
+  if(is.null(user) == TRUE){
+    DT::renderDataTable(
+      df,
+      extensions = "Buttons",
+      server = FALSE,
+      options = list(
+        scrollX = TRUE,
+        pageLength = page_length,
+        dom = "Bftip",
+        buttons = c("csv")
+      )
     )
-  )
+  } else if (user == "guest"){
+    error_message <- c("Data access is limited to Admin users only.")
+    df_em <- data.frame(error_message)
+    DT::renderDataTable(
+      df_em,
+      options = list(
+        scrollX = TRUE,
+        pageLength = 1,
+        dom = 't'
+      )
+    )
+  } else{
+    DT::renderDataTable(
+      df,
+      extensions = "Buttons",
+      server = FALSE,
+      options = list(
+        scrollX = TRUE,
+        pageLength = page_length,
+        dom = "Bftip",
+        buttons = c("csv")
+      )
+    )
+  }
 }
 
 #' #' Helper function to format dates to strings for export
