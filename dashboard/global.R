@@ -464,6 +464,10 @@ custom_theme <- function() {
     border-top-color:#94B4D6;
     } .nav-tabs-custom>.nav-tabs>li.active {
     border-top-color: #94B4D6;
+} .skin-blue .sidebar-menu>li.active>a {
+    border-left-color: #94B4D6;
+} .skin-blue .sidebar-menu>li:hover>a {
+    border-left-color: #94B4D6;
 }"
   )))
 
