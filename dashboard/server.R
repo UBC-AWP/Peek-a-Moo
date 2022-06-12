@@ -1,13 +1,13 @@
 library(shinymanager)
 
-passphrase <- Sys.getenv("PASSPHRASE")
+#passphrase <- Sys.getenv("PASSPHRASE")
 
-# credentials <- data.frame(
-#   user = c("guest", "user", "admin"), # mandatory
-#   password = c("guest", "shiny", "shinymanager"), # mandatory
-#   admin = c(FALSE, FALSE, TRUE),
-#   stringsAsFactors = FALSE
-# )
+credentials <- data.frame(
+  user = c("guest", "user", "admin"), # mandatory
+  password = c("guest", "shiny", "shinymanager"), # mandatory
+  admin = c(FALSE, FALSE, TRUE),
+  stringsAsFactors = FALSE
+)
 
 # Set up shiny server
 server <- function(input, output, session) {
@@ -15,9 +15,9 @@ server <- function(input, output, session) {
   # check_credentials directly on sqlite db
   res_auth <- secure_server(
     check_credentials = check_credentials(
-    #  credentials
-      "../auth/database.sqlite",
-      passphrase = passphrase
+      credentials
+    #  "../auth/database.sqlite",
+     # passphrase = passphrase
     )
   )
 
@@ -525,9 +525,13 @@ server <- function(input, output, session) {
           df = raw_graph_data,
           network = input$relationship_network_selection
         )))) {
-          output$network_plot <- missing_date_range_check(input$relationship_date_range,
+          output$network_disp_plot <- missing_date_range_check(input$relationship_date_range,
             df = raw_graph_data,
             network = input$relationship_network_selection
+          )
+          output$network_plot <- missing_date_range_check(input$relationship_date_range,
+                                                               df = raw_graph_data,
+                                                               network = input$relationship_network_selection
           )
         } else {
           if (input$relationship_network_selection == "Displacement") {
@@ -651,7 +655,14 @@ server <- function(input, output, session) {
           )
         )
       })
-    } else {
+    } else if (!(is.null(missing_date_range_check_plotly(input$relationship_date_range,
+                                             df = raw_graph_data
+      )))) {
+        output$elo_plot <- missing_date_range_check_plotly(input$relationship_date_range,
+                                                           df = raw_graph_data
+        )
+      } else {
+      
       if (input$relationship_network_selection == "Displacement Star*") {
         cow_id <- input$star_cow_selection
 
@@ -690,7 +701,7 @@ server <- function(input, output, session) {
           cow_id_2 = cow_id_2
         ), data_config = data_config)
       }
-    }
+     }
   })
 
   # render behaviour plots

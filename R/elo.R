@@ -69,3 +69,68 @@ plot_elo_paired <- function(x, start_date, end_date, cow_id_1 = NULL, cow_id_2 =
   
   ggplotly(plot)
 }
+
+#' Helper function for catching if there are missing dates in plotly plots
+#'
+#' @param df The data frame for the selected network
+#' @param date_range The input date range from the date range widget
+#'
+#' @return error_message if there is a date input issue that needs to stop the graph generation
+missing_date_range_check_plotly <- function(date_range, df = NULL) {
+  `%!in%` <- Negate(`%in%`)
+  df_dates <- unique(df$date)
+  
+  if (date_range[[1]] %!in% df_dates && date_range[[2]] == date_range[[1]]) {
+    error_messagep1 <- renderPlotly({
+      validate(
+        need(
+          date_range[[1]] %in% df_dates,
+          paste0(
+            "There is no data for the selected date ",
+            date_range[[1]],
+            ". Please select a different date."
+          )
+        )
+      )
+    })
+    return(error_messagep1)
+  } else if (date_range[[2]] %!in% df_dates) {
+    error_messagep2 <- visNetwork::renderVisNetwork({
+      validate(
+        need(
+          date_range[[2]] %in% df_dates,
+          paste0(
+            "There is no data for the selected date ",
+            date_range[[2]],
+            ". Plot will crash if ending date is missing. Please select a different ending date."
+          )
+        )
+      )
+    })
+    return(error_messagep2)
+  }
+  else {
+    if (date_range[[1]] %!in% df_dates) {
+      showNotification(
+        type = "warning",
+        paste0("Date range contains days with missing data: Dominance Plot.")
+      )
+    }
+    if (date_range[[1]] %in% df_dates && date_range[[2]] %in% df_dates) {
+      range_of_df <- df_dates[which(df_dates == date_range[[1]]):which(df_dates == date_range[[2]])]
+      
+      range_days <- seq(as.Date(date_range[[1]]),
+                        as.Date(date_range[[2]]),
+                        by = "days"
+      )
+      
+      if (all(range_days %in% range_of_df) == FALSE) {
+        showNotification(
+          type = "warning",
+          paste0("Date range contains days with missing data: Dominance Plot.")
+        )
+      }
+    }
+    return(NULL)
+  }
+}

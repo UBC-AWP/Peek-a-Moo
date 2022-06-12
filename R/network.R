@@ -569,7 +569,7 @@ missing_date_range_check <- function(date_range, df = NULL, network = NULL) {
     if (date_range[[1]] %!in% df_dates) {
       showNotification(
         type = "warning",
-        paste0("Date range contains days with missing data.")
+        paste0("Date range contains days with missing data: Social Network.")
       )
     }
     if (date_range[[1]] %in% df_dates && date_range[[2]] %in% df_dates) {
@@ -583,7 +583,7 @@ missing_date_range_check <- function(date_range, df = NULL, network = NULL) {
       if (all(range_days %in% range_of_df) == FALSE) {
         showNotification(
           type = "warning",
-          paste0("Date range contains days with missing data.")
+          paste0("Date range contains days with missing data: Social Network.")
         )
       }
     }
