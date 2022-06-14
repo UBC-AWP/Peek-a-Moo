@@ -643,7 +643,11 @@ server <- function(input, output, session) {
     req(input$relationship_network_selection)
 
     raw_graph_data <- dominance_df
+    cow_id <- input$star_cow_selection
+    cow_id_1 <- input$paired_cow_selection_1
+    cow_id_2 <- input$paired_cow_selection_2
 
+    if (!(input$relationship_network_selection %in% c("Displacement", "Neighbour", "Synchronicity"))){
     if (input$relationship_date_range[[1]] > input$relationship_date_range[[2]]) {
       output$elo_plot <- renderPlotly({
         validate(
@@ -664,7 +668,6 @@ server <- function(input, output, session) {
       } else {
       
       if (input$relationship_network_selection == "Displacement Star*") {
-        cow_id <- input$star_cow_selection
 
         output$elo_plot <- renderPlotly({
           plot_elo(raw_graph_data,
@@ -681,9 +684,7 @@ server <- function(input, output, session) {
           cow_id_1 = cow_id
         ), data_config = data_config)
       } else if (input$relationship_network_selection == "Displacement Paired") {
-        cow_id_1 <- input$paired_cow_selection_1
-        cow_id_2 <- input$paired_cow_selection_2
-
+        
         output$elo_plot <- renderPlotly({
           plot_elo_paired(raw_graph_data,
             input$relationship_date_range[[1]],
@@ -700,8 +701,9 @@ server <- function(input, output, session) {
           cow_id_1 = cow_id_1,
           cow_id_2 = cow_id_2
         ), data_config = data_config)
+       }
       }
-     }
+    }
   })
 
   # render behaviour plots

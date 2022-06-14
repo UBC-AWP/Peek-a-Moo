@@ -171,7 +171,11 @@ relationships_tab <- tabItem(
       ),
       conditionalPanel(
         condition = "input.relationship_network_selection == 'Displacement Star*'",
-        column(4, cow_selection_widget("star_cow_selection", multiple = FALSE, label = "Cow of Interest")),
+        column(4, cow_selection_widget("star_cow_selection", multiple = FALSE, label = p(
+          "Cow of interest",
+          tags$style(type = "text/css", "#button_cow_of_interest{border-radius: 0px;border-width: 0px}"),
+          bsButton("button_cow_of_interest", label = "", icon = icon("info-circle", lib = "font-awesome"), size = "extra-small")
+        ))),
         column(8, sliderInput("star_cd_range", "Competition Density", min = 0, max = 1, value = c(0.2, 0.5), step = 0.1))
       ),
       conditionalPanel(
@@ -187,6 +191,16 @@ relationships_tab <- tabItem(
           "<u>Date Range</u> - timeline for the given plots.",
           "<u>Network</u> - type of network to display.",
           sep = "<br>"
+        ),
+        placement = "right",
+        trigger = "hover",
+        options = list(container = "body")
+      ),
+      bsPopover(
+        id = "button_cow_of_interest", title = "Cow of interest",
+        content = paste(
+          "<b>Note:</b>",
+          "If there is no data for the selected cow of ineterst for the given timeframe, the widget will automatically select the next cow in the list to generate the plots below. This could result in multiple warning flags generating."
         ),
         placement = "right",
         trigger = "hover",
@@ -498,7 +512,7 @@ ui <- secure_app(ui,
         "For any questions, please contact ",
         tags$a(
           href = "mailto:animalwelfare@ubc.ca?Subject=Peek-a-Moo%20aDashboard%20aAccess",
-          target = "_top", "administrator"
+          target = "_top", "the administrator"
         )
       ),
       tags$div(

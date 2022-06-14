@@ -78,7 +78,7 @@ plot_elo_paired <- function(x, start_date, end_date, cow_id_1 = NULL, cow_id_2 =
 #' @return error_message if there is a date input issue that needs to stop the graph generation
 missing_date_range_check_plotly <- function(date_range, df = NULL) {
   `%!in%` <- Negate(`%in%`)
-  df_dates <- unique(df$date)
+  df_dates <- unique(df$Date)
   
   if (date_range[[1]] %!in% df_dates && date_range[[2]] == date_range[[1]]) {
     error_messagep1 <- renderPlotly({
