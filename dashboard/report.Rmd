@@ -39,10 +39,18 @@ Bootstrapping is a widely used approach for dealing with uncertainty in social n
 
 Pre-network permutation(also called data stream permutation) is another approach that randomize the network edges while keeping the strength of each node. This method has recently been called into question for its high potential false positive rate with or without observation bias (@sosa2020network) and lead to spurious conclusions as the effect size is not adjusted (@franks2021calculating).
 
-A Bayesian framework for modelling social network data has been introduced (@hart2021bison). In this report, we use the Bayesian framework on the cows feeding and drinking neighbour count data from `r params$date_range[[1]]` to `r params$date_range[[2]]` and calculate the posterior distribution for each edge weight. From the posterior distribution, we can get the 95% credible interval of all the edges that related to our focal cow `r params$cow_id``and infer the focal cow's feeding buddies relationships with other cows in the herd.
+A Bayesian framework for modelling social network data has been introduced (@hart2021bison). In this report, we use the Bayesian framework on the cows feeding and drinking neighbour count data from `r params$date_range[[1]]` to `r params$date_range[[2]]` and calculate the posterior distribution for each edge weight. From the posterior distribution, we can get the 95% credible interval of all the edges that related to our focal cow `r params$cow_id` and infer the focal cow's feeding buddies relationships with other cows in the herd.
 
 
 ```{r library packages, include=FALSE}
+library(rstan)
+library(tibble)
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(stats)
+library(graphics)
+library(ggplot2)
 rstan_options(auto_write = TRUE)  # To save some compiling
 ```
 
@@ -190,12 +198,12 @@ model_data <- list(
 posterior_sampling <- rstan::sampling(
   object = stan_model,
   data = model_data,
-  chains = 2,
+  chains = 1,
   iter = 8000,
   warmup = 2000,
   thin = 10,
   seed = 123,
-  cores = getOption("mc.cores", 2L)
+  cores = getOption("mc.cores", 1L)
 )
 
 
@@ -203,7 +211,7 @@ posterior_sampling <- rstan::sampling(
 
 # Results
 
-The sampling trace can be plotted using Rstan's `traceplot` function to verify this visually and assess convergence. Figure 3 shows that the chains have reached convergence and consistant with each other.
+The sampling trace can be plotted using Rstan's `traceplot` function to verify this visually and assess convergence. Figure 3 shows that the chain has reached convergence.
 
 ```{r traceplot, fig.width=7, fig.height=4, fig.cap="Traceplot for MCMC chains", out.width="100%"}
 
@@ -242,7 +250,7 @@ posterior_sampling_df <- as.data.frame(posterior_sampling)
 
 Once we have the posterior distribution for each edge weight, we can compare all the edges weights related to our focal cow `r params$cow_id`. For the simplicity of visualization, Figure 5 only lists the top 10 strongest the weakest relationships related to our focal cow along with 95% credible interval of the edge weights. From the plot, we can have a general idea of which cows are cow `r params$cow_id`'s best feeding buddies.
 
-```{r ranking plot, fig.width=5, fig.height=4, fig.cap="Posterior distribution of edge weights related to focal cow", out.width="100%"}
+```{r ranking plot, fig.width=5, fig.height=8, fig.cap="Posterior distribution of edge weights related to focal cow", out.width="100%"}
 # We select the edge coefficients related to our focal cow
 cow_id = params$cow_id
 count_df.focus <- df %>% 
@@ -280,8 +288,9 @@ posterior_count_CIs <- posterior_sampling.focus %>%
             median = median(count),
             upper_bound = quantile(count, probs = 0.975)) %>%
   mutate(dyad = fct_reorder(dyad, median)) %>%
-  arrange(desc(median)) %>%
-  slice(-(11:(n()-10)))
+  arrange(desc(median)) 
+# %>%
+#   slice(-(11:(n()-10)))
 
 
 posterior_count_CIs_plot <- posterior_count_CIs %>%

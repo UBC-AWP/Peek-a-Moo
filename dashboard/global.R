@@ -19,7 +19,12 @@ library(rmarkdown)
 library(rstan)
 library(rstantools)
 library(shinyalert)
+library(tibble)
+library(stats)
+library(graphics)
+library(ggplot2)
 library(akima)
+
 
 
 # load in plot/table creation scripts
@@ -365,7 +370,7 @@ update_cow_selection_displacement <- function(relationship_type = "Displacement 
       # filter_cd(occupied_bins_with_feed_percent, cd_range) %>%
       select(Actor_cow) %>%
       unique() %>%
-      arrange(desc(Actor_cow))
+      arrange(Actor_cow)
     colnames(cow_choices) <- paste0(length(cow_choices[[1]]), " cows with data in date and cd range")
 
     # update widget

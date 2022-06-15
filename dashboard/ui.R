@@ -249,16 +249,7 @@ relationships_tab <- tabItem(
   ),
   fluidRow(
     conditionalPanel(
-      condition = "input.relationship_network_selection == 'Displacement'",
-      default_tabBox("Social Network", "network_disp",
-        width = 12,
-        output_fun = visNetworkOutput
-      )
-    )
-  ),
-  fluidRow(
-    conditionalPanel(
-      condition = "input.relationship_network_selection == 'Displacement Star*' || input.relationship_network_selection == 'Displacement Paired'",
+      condition = "input.relationship_network_selection == 'Displacement' || input.relationship_network_selection == 'Displacement Star*' || input.relationship_network_selection == 'Displacement Paired'",
       default_tabBox("Social Network", "network",
         width = 6,
         output_fun = visNetworkOutput
