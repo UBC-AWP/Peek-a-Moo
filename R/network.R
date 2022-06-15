@@ -533,9 +533,9 @@ missing_date_range_check <- function(date_range, df = NULL, network = NULL) {
 
   if (!(network %in% c("Displacement", "Displacement Star*", "Displacement Paired"))) {
     df_dates <- names(df)
-    df_dates <- as.Date(df_dates, format = "%Y-%m-%d")
+    df_dates <- sort(as.Date(df_dates, format = "%Y-%m-%d"))
   } else {
-    df_dates <- unique(df$date)
+    df_dates <- sort(unique(df$date))
   }
   if (date_range[[1]] %!in% df_dates && date_range[[2]] == date_range[[1]]) {
     error_message1 <- visNetwork::renderVisNetwork({
