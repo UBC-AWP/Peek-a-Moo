@@ -8,6 +8,8 @@ on:
       - 'auth/**'
       - 'README.md'
       - 'LICENSE'
+      - 'CONTRIBUTING.md'
+      - 'CODE_OF_CONDUCT.md'
       - '.gitignore'
       - '.github/workflows/**'
   
@@ -78,8 +80,9 @@ jobs:
         heroku_email: "allyson@datallurgy.com"
         buildpack: "vsv/heroku-buildpack-r"
         procfile: "web: R --file=dashboard/run.R --gui-none --no-save"
-        # healthcheck: "https://peek-a-moo-dev.herokuapp.com"
-        # delay: 15
-        # rollbackonhealthcheckfailed: true
+
       env:
         HD_PASSPHRASE: ${{secrets.SHINYMANAGER_PASSPHRASE}}
+        HD_POSTGRES_USER: ${{secrets.POSTGRES_USER}}
+        HD_POSTGRES_PASSWORD: ${{secrets.POSTGRES_PASSWORD}}
+        HD_POSTGRES_HOST: ${{secrets. POSTGRES_HOST}}

@@ -1,5 +1,7 @@
 helpers.installPackages('shinydashboard', 'shinyWidgets', 'shinymanager', 
-    'Rcpp', 'dplyr', 'lubridate', 'plotly', 'igraph', 'png', 'visNetwork', 
-    'googleCloudStorageR', 'shinycssloaders', 'tidyr', 'tibble', 'purrr',
-    'forcats', 'stringr', 'reshape2', 'shinyBS', 'shinyalert', 'rmarkdown',
-    'rstan', 'rstantools','StanHeaders', 'akima', 'DBI', 'RPostgres','dbplyr')
+    'Rcpp', 'dplyr', 'lubridate', 'plotly', 'igraph', 'visNetwork',
+    'shinycssloaders', 'tidyr', 'tibble', 'purrr', 'forcats', 'stringr', 
+    'shinyBS', 'shinyalert', 'DBI', 'RPostgres','dbplyr', 'ggplot2', 'here')
+    
+# helpers.installPackages('rmarkdown', 'rstan', 'rstantools','StanHeaders',
+#     'akima', 'stats', 'graphics')

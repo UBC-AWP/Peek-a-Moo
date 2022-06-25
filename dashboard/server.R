@@ -306,46 +306,6 @@ server <- function(input, output, session) {
           )
         )
       })
-      output$feeding_plot <- visNetwork::renderVisNetwork({
-        validate(
-          need(
-            input$relationship_date_range[[1]] < input$relationship_date_range[[2]],
-            paste0(
-              "Ending date must come after the starting date. Please select a different starting date."
-            )
-          )
-        )
-      })
-      output$neighbour_plot <- visNetwork::renderVisNetwork({
-        validate(
-          need(
-            input$relationship_date_range[[1]] < input$relationship_date_range[[2]],
-            paste0(
-              "Ending date must come after the starting date. Please select a different starting date."
-            )
-          )
-        )
-      })
-      output$lying_plot <- visNetwork::renderVisNetwork({
-        validate(
-          need(
-            input$relationship_date_range[[1]] < input$relationship_date_range[[2]],
-            paste0(
-              "Ending date must come after the starting date. Please select a different starting date."
-            )
-          )
-        )
-      })
-      output$network_disp_plot <- visNetwork::renderVisNetwork({
-        validate(
-          need(
-            input$relationship_date_range[[1]] < input$relationship_date_range[[2]],
-            paste0(
-              "Ending date must come after the starting date. Please select a different starting date."
-            )
-          )
-        )
-      })
     } else {
 
       # select network to plot
@@ -381,66 +341,67 @@ server <- function(input, output, session) {
             
             ## render R markdown file
             
-            output$downloadReport <- downloadHandler(
-              filename = function() {
-                paste0("Cow_",
-                      input$analysis_cow_id,
-                      "_",
-                      input$relationship_date_range[[1]],
-                      "_to_",
-                      input$relationship_date_range[[2]],
-                      '_neighbor_count_report', 
-                      '.', 
-                      switch(
-                  input$analysis_format, PDF = 'pdf', HTML = 'html'
-                        )
-                      )
-                },
-              
-              content = function(file) {
-                src1 <- normalizePath('report.Rmd')
-                src2 <- normalizePath('reference.bib')
-                src3 <- normalizePath('neighbour_report.tex')
-                
-                # temporarily switch to the temp dir, in case you do not have write
-                # permission to the current working directory
-                owd <- setwd(tempdir())
-                on.exit(setwd(owd))
-                file.copy(src1, 'report.Rmd', overwrite = TRUE)
-                file.copy(src2, 'reference.bib', overwrite = TRUE)
-                file.copy(src3, 'neighbour_report.tex', overwrite = TRUE)
-                
-                from_date_neighbour <- input$relationship_date_range[[1]]
-                to_date_neighbour <- input$relationship_date_range[[2]] 
-                Feeding_drinking_neighbour_bout <- tbl(con,"Feeding_drinking_neighbour_bout") %>%
-                  filter(
-                    date >= !!(from_date_neighbour),
-                    date <= !!(to_date_neighbour)
-                  ) %>%
-                  as.data.frame()
-                # Set up parameters to pass to Rmd document
-                params <- list(
-                  data = Feeding_drinking_neighbour_bout,
-                  cow_id = input$analysis_cow_id, 
-                  date_range = input$relationship_date_range
-                )
-                # Knit the document, passing in the `params` list, and eval it in a
-                # child of the global environment (this isolates the code in the document
-                # from the code in this app).
-                out <- rmarkdown::render(
-                  'report.Rmd', 
-                  switch(
-                    input$analysis_format,
-                    PDF = pdf_document(fig_caption = TRUE,        
-                                       includes = includes(in_header =  "neighbour_report.tex")), 
-                    HTML = html_document(toc = TRUE)
-                  ),
-                  params = params,
-                  envir = new.env(parent = globalenv())
-                )
-                file.rename(out, file)
-              }
-            )
+            # output$downloadReport <- downloadHandler(
+            #   filename = function() {
+            #     paste0("Cow_",
+            #           input$analysis_cow_id,
+            #           "_",
+            #           input$relationship_date_range[[1]],
+            #           "_to_",
+            #           input$relationship_date_range[[2]],
+            #           '_neighbor_count_report', 
+            #           '.', 
+            #           switch(
+            #       input$analysis_format, PDF = 'pdf', HTML = 'html'
+            #             )
+            #           )
+            #     },
+            #   
+            #   content = function(file) {
+            #     src1 <- normalizePath('report.Rmd')
+            #     src2 <- normalizePath('reference.bib')
+            #     src3 <- normalizePath('neighbour_report.tex')
+            #     
+            #     # temporarily switch to the temp dir, in case you do not have write
+            #     # permission to the current working directory
+            #     owd <- setwd(tempdir())
+            #     on.exit(setwd(owd))
+            #     file.copy(src1, 'report.Rmd', overwrite = TRUE)
+            #     file.copy(src2, 'reference.bib', overwrite = TRUE)
+            #     file.copy(src3, 'neighbour_report.tex', overwrite = TRUE)
+            #     
+            #     from_date_neighbour <- input$relationship_date_range[[1]]
+            #     to_date_neighbour <- input$relationship_date_range[[2]] 
+            #     Feeding_drinking_neighbour_bout <- tbl(con,"Feeding_drinking_neighbour_bout") %>%
+            #       filter(
+            #         date >= !!(from_date_neighbour),
+            #         date <= !!(to_date_neighbour)
+            #       ) %>%
+            #       as.data.frame()
+            #     # Set up parameters to pass to Rmd document
+            #     params <- list(
+            #       data = Feeding_drinking_neighbour_bout,
+            #       cow_id = input$analysis_cow_id, 
+            #       date_range = input$relationship_date_range
+            #     )
+            #     # Knit the document, passing in the `params` list, and eval it in a
+            #     # child of the global environment (this isolates the code in the document
+            #     # from the code in this app).
+            #     out <- rmarkdown::render(
+            #       'report.Rmd', 
+            #       switch(
+            #         input$analysis_format,
+            #         PDF = pdf_document(fig_caption = TRUE,        
+            #                            includes = includes(in_header =  "neighbour_report.tex")), 
+            #         HTML = html_document(toc = TRUE)
+            #       ),
+            #       params = params,
+            #       envir = new.env(parent = globalenv())
+            #     )
+            #     file.rename(out, file)
+            #   }
+            # )
+            
           }
         } else {
           
@@ -565,14 +526,14 @@ server <- function(input, output, session) {
             }
             
             if (length(input$current_disp) == 0) {
-              output$network_disp_plot <- visNetwork::renderVisNetwork({
+              output$network_plot <- visNetwork::renderVisNetwork({
                 plot_network_disp(nodes, edges, layouts_type) %>%
                   visEvents(select = "function(nodes) {
                 Shiny.onInputChange('current_disp', nodes.nodes);
                 ;}")
               })
               
-              output$network_disp_table <- format_dt_table(edges %>% select(c(from, to, weight)), data_config = data_config)
+              output$network_table <- format_dt_table(edges %>% select(c(from, to, weight)), data_config = data_config)
             } else if (length(input$current_disp) == 1) {
               output$network_disp_table <- format_dt_table(
                 edges %>% 
@@ -658,12 +619,37 @@ server <- function(input, output, session) {
           )
         )
       })
+    } else if (!(is.null(missing_date_range_check_plotly(input$relationship_date_range,
+                                                         df = raw_graph_data
+    )))) {
+      output$elo_plot <- missing_date_range_check_plotly(input$relationship_date_range,
+                                                         df = raw_graph_data
+      )
     } else {
-      if (input$relationship_network_selection == "Displacement Star*") {
+      if (input$relationship_network_selection == "Displacement") {
+        output$elo_plot <- renderPlotly({
+          plot_elo(raw_graph_data,
+                   input$relationship_date_range[[1]],
+                   input$relationship_date_range[[2]]
+          ) %>%
+            layout(legend = list(
+              orientation = "h",
+              x = 0,
+              y = -0.2
+            )
+            ) %>%
+            config(modeBarButtonsToRemove = config)
+        })
+        
+        output$elo_table <- format_dt_table(elo_df(raw_graph_data,
+                                                   input$relationship_date_range[[1]],
+                                                   input$relationship_date_range[[2]]
+        ), data_config = data_config)
+      } else if (input$relationship_network_selection == "Displacement Star*") {
         cow_id <- input$star_cow_selection
 
         output$elo_plot <- renderPlotly({
-          plot_elo(raw_graph_data,
+          plot_elo_star(raw_graph_data,
             input$relationship_date_range[[1]],
             input$relationship_date_range[[2]],
             cow_id = cow_id
@@ -687,6 +673,12 @@ server <- function(input, output, session) {
             cow_id_1 = cow_id_1,
             cow_id_2 = cow_id_2
           ) %>%
+            layout(legend = list(
+              orientation = "h",
+              x = 0,
+              y = -0.2
+            )
+            ) %>%
             config(modeBarButtonsToRemove = config)
         })
 

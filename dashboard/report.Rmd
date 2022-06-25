@@ -51,7 +51,7 @@ library(purrr)
 library(stats)
 library(graphics)
 library(ggplot2)
-library(akima)
+
 rstan_options(auto_write = TRUE)  # To save some compiling
 ```
 
@@ -340,6 +340,7 @@ posterior_count_CIs <- posterior_sampling.focus %>%
             upper_bound = quantile(count, probs = 0.975)) %>%
   mutate(dyad = fct_reorder(dyad, median)) %>%
   arrange(desc(median)) 
+
 
 # plot all the 95% credible intervals
 posterior_count_CIs_plot <- posterior_count_CIs %>%

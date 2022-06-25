@@ -181,6 +181,20 @@ relationships_tab <- tabItem(
         column(4, sliderInput("paired_cd_range", "Competition Density", min = 0, max = 1, value = c(0.2, 0.5), step = 0.1))
       ),
       bsPopover(
+        id = "button_network_info", title = "Network Decriptions",
+        content = paste(
+          "<b>Neighbours</b> - Cows who feed and drink directly beside each other.",
+          "<b>Synchronicity</b> - Split into two networks, this showcases networks of cows who stand and lie at the same time.",
+          "<b>Displacement</b> - Displacement is an instance of a cow replacing another cow at the same feeder within a time frame of 23 seconds or less. This network showcases that type of interaction between cows.",
+          "<b>Displacement Star*</b> - An indiviual cows displacement interactions.",
+          "<b>Displacement Paired</b> - A pair of cows displacement interactions.",
+          sep = "<br>"
+        ),
+        placement = "right",
+        trigger = "hover",
+        options = list(container = "body")
+      ),
+      bsPopover(
         id = "button_global_network", title = "Global Network Customizations",
         content = paste(
           "<b>Customizations:</b>",
@@ -235,21 +249,32 @@ relationships_tab <- tabItem(
   ),
   fluidRow(
     conditionalPanel(
-      condition = "input.relationship_network_selection == 'Displacement'",
-      default_tabBox("Social Network", "network_disp",
-        width = 12,
-        output_fun = visNetworkOutput
-      )
-    )
-  ),
-  fluidRow(
-    conditionalPanel(
-      condition = "input.relationship_network_selection == 'Displacement Star*' || input.relationship_network_selection == 'Displacement Paired'",
+      condition = "input.relationship_network_selection == 'Displacement' || input.relationship_network_selection == 'Displacement Star*' || input.relationship_network_selection == 'Displacement Paired'",
       default_tabBox("Social Network", "network",
         width = 6,
         output_fun = visNetworkOutput
       ),
-      default_tabBox("Dominance", "elo", width = 6)
+      default_tabBox(
+        title = p(
+        "Dominance",
+        tags$style(type = "text/css", "#button_Dominance_plot{border-radius: 0px;border-width: 0px}"),
+        bsButton("button_Dominance_plot",
+                 label = "", icon = icon("info-circle", lib = "font-awesome"),
+                 size = "extra-small"
+        )
+      ),
+      "elo",
+      width = 6,
+      popover = bsPopover(
+        id = "button_Dominance_plot", title = "Dominance",
+        content = 
+          paste("The plot shown for the full Displacement network, (most and least dominant cows), is calculated as the cows with the maximum and minimum average elo for the selected period.",
+                "",
+                "The most dominant cows are shown in red, and the least dominant in blue.",
+                sep = "<br>"),
+        placement = "right",
+        trigger = "hover",
+        options = list(container = "body")))
     )
   ),
   fluidRow(
@@ -495,7 +520,7 @@ ui <- secure_app(ui,
     border-color: #6b96c7;
 }")),
       tags$p(
-        "For any questions, please contact ",
+        "For any questions, please contact the ",
         tags$a(
           href = "mailto:animalwelfare@ubc.ca?Subject=Peek-a-Moo%20aDashboard%20aAccess",
           target = "_top", "administrator"

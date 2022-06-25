@@ -10,20 +10,19 @@ library(shinyWidgets)
 library(plotly)
 library(igraph)
 library(lubridate)
-library(png)
 library(visNetwork)
-library(googleCloudStorageR)
-library(reshape2)
 library(shinyBS)
-library(rmarkdown)
-library(rstan)
-library(rstantools)
 library(shinyalert)
-library(akima)
+library(tibble)
+library(graphics)
+library(ggplot2)
 library(DBI)
 library(RPostgres)
-
-
+# library(rmarkdown)
+# library(rstan)
+# library(rstantools)
+# library(stats)
+# library(akima)
 
 # load in plot/table creation scripts
 source("../R/notifications.R")
@@ -32,43 +31,15 @@ source("../R/daily_behavior.R")
 source("../R/network.R")
 source("../R/elo.R")
 source("../R/bully_analysis.R")
-#source("../R/bins.R")
 source("../R/THI_analysis.R")
 source("../R/FAQ.R")
 
-
-
-# download data from GCP
-gcs_auth(json_file = '../auth/peek-a-moo.json')
-
-gcs_global_bucket("peek-a-moo-data")
-
-objects <- gcs_list_objects()
-download_list <- grep("*.Rda", objects$name, value = TRUE)
-
-if (!dir.exists("../data/")) {
-  dir.create("../data/")
-  map(download_list, function(x) gcs_get_object(x,
-    saveToDisk = paste('../data/', gsub(".*/","",x), sep = ""),
-    overwrite = TRUE))
-}
-
-check_files = list.files('../data/')
-
-if (!length(check_files) > 0) {
-  map(download_list, function(x) gcs_get_object(x,
-    saveToDisk = paste('../data/', gsub(".*/","",x), sep = ""),
-    overwrite = TRUE))
-}
-
-
-
 # use environment variable
-Postgres_user <- Sys.getenv("Postgres_user")
-Postgres_password <- Sys.getenv("Postgres_password")
-Postgres_host <- Sys.getenv("Postgres_host")
-Postgres_dbname <- Sys.getenv("Postgres_dbname")
-Postgres_timezone <- Sys.getenv("Postgres_timezone")
+Postgres_user <- Sys.getenv("POSTGRES_USER")
+Postgres_password <- Sys.getenv("POSTGRES_PASSWORD")
+Postgres_host <- Sys.getenv("POSTGRES_HOST")
+Postgres_dbname <- 'cowbonds'
+Postgres_timezone <- 'America/Los_Angeles'
 
 
 con <-  dbConnect(RPostgres::Postgres(), 
@@ -108,7 +79,6 @@ lying_standing_summary_by_date <- tbl(con,"lying_standing_summary_by_date") %>%
 
 master_summary <- tbl(con,"master_summary") %>%
   as.data.frame()
-
 
 # load data if not already in memory
 if (!exists("THI")) {
@@ -196,10 +166,10 @@ report_tabBox <- function(title, var_name, width = 6, height = "500px", output_f
     title = title, side = "right", selected = "Plot", width = width,
     height = height,
     popover,
-    tabPanel("Analysis", helpText("Select a cow of interest to generate a Bayesian analysis report on \"Feeding Neighbours\". Note: generating a report will take more than 4 minutes, as a Markov chain Monte Carlo simulation is running under the hood."),
-             cow_selection_widget("analysis_cow_id", multiple = FALSE, label = "Cow of Interest"),
-             download_format_widget("analysis_format"),
-             downloadButton('downloadReport')),
+    # tabPanel("Analysis", helpText("Select a cow of interest to generate a Bayesian analysis report on \"Feeding Neighbours\". Note: generating a report will take more than 4 minutes, as a Markov chain Monte Carlo simulation is running under the hood."),
+    #          cow_selection_widget("analysis_cow_id", multiple = FALSE, label = "Cow of Interest"),
+    #          download_format_widget("analysis_format"),
+    #          downloadButton('downloadReport')),
     tabPanel("Data", shinycssloaders::withSpinner(
       image = "loading_cow_table.gif",
       DT::dataTableOutput(paste0(var_name, "_table"))
@@ -293,7 +263,11 @@ cow_selection_widget <- function(inputId, multiple = TRUE, label = "Cows") {
 network_selection_widget <- function(inputId, multiple = FALSE) {
   pickerInput(
     inputId = inputId,
-    label = "Network",
+    label = p(
+      "Network",
+      tags$style(type = "text/css", "#button_network_info{border-radius: 0px;border-width: 0px}"),
+      bsButton("button_network_info", label = "", icon = icon("info-circle", lib = "font-awesome"), size = "extra-small")
+    ),
     choices = c("Neighbour", "Synchronicity", "Displacement", "Displacement Star*", "Displacement Paired"),
     selected = NULL,
     multiple = multiple,
@@ -392,6 +366,7 @@ update_cow_selection_displacement <- function(relationship_type = "Displacement 
       select(from) %>%
       unique() %>%
       arrange(desc(from))
+
     colnames(cow_choices) <- paste0(length(cow_choices[[1]]), " cows with data in date and cd range")
 
     # update widget
