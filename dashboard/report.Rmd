@@ -39,10 +39,19 @@ Bootstrapping is a widely used approach for dealing with uncertainty in social n
 
 Pre-network permutation(also called data stream permutation) is another approach that randomize the network edges while keeping the strength of each node. This method has recently been called into question for its high potential false positive rate with or without observation bias (@sosa2020network) and lead to spurious conclusions as the effect size is not adjusted (@franks2021calculating).
 
-A Bayesian framework for modelling social network data has been introduced (@hart2021bison). In this report, we use the Bayesian framework on the cows feeding and drinking neighbour count data from `r params$date_range[[1]]` to `r params$date_range[[2]]` and calculate the posterior distribution for each edge weight. From the posterior distribution, we can get the 95% credible interval of all the edges that related to our focal cow `r params$cow_id``and infer the focal cow's feeding buddies relationships with other cows in the herd.
+A Bayesian framework for modelling social network data has been introduced (@hart2021bison). In this report, we use the Bayesian framework on the cows feeding and drinking neighbour count data from `r params$date_range[[1]]` to `r params$date_range[[2]]` and calculate the posterior distribution for each edge weight. From the posterior distribution, we can get the 95% credible interval of all the edges that related to our focal cow `r params$cow_id` and infer the focal cow's feeding buddies relationships with other cows in the herd.
 
 
 ```{r library packages, include=FALSE}
+library(rstan)
+library(tibble)
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(stats)
+library(graphics)
+library(ggplot2)
+library(akima)
 rstan_options(auto_write = TRUE)  # To save some compiling
 ```
 
@@ -52,11 +61,94 @@ Figure 1 shows the density of the total feeding neighbour counts for all the dya
 
 ```{r prepare data, fig.width=5, fig.height=3, fig.cap="Density plot of edge weights distribution of the cows population", out.width="100%"}
 
-# function to convert the data form to edgelist
+# define two functions to convert the data form to edgelist
+# functions are adapted from https://github.com/MOO-VIS/Peek-a-Moo
 
-combine_data <- function(x){
+#' Turn An Adjacency Matrix Into a Long Tibble
+#'
+#' @param x A matrix with named dimensions.
+#' @param upper_only A logical which indicates whether the lower triangular
+#'   portion of the matrix should be zeroed out (removed) from the output.
+#'   Defaults to FALSE.
+#'
+#' @return A tibble with columns `to` (matrix columns), `from` (matrix rows),
+#'   and `value` (matrix entries). Automatically removes entries with zero.
+#'
+#' @examples
+#' # create a demo matrix
+#' set.seed(1)
+#' A <- matrix(sample(0:2, 16, replace = TRUE),
+#'             nrow = 4, dimnames = list(letters[1:4], letters[1:4]))
+#'
+#' # create a long table
+#' adjacency_to_long(A)
+#'
+#' # create along table for the upper triangle only (appropriate) for
+#' # undirected graphs.
+#' adjacency_to_long(A, upper_only = TRUE)
+adjacency_to_long <- function(x, upper_only = FALSE) {
+  # check inputs
+  dn <- dimnames(x)
+  if (!inherits(x, "matrix")) {
+    stop("Input must be a matrix")
+  } else if (is.null(dn) || is.null(dn[[1]]) || is.null(dn[[2]])) {
+    stop("Input matrix must have named dimensions.")
+  } else if (!all.equal(dn[[1]], dn[[2]])) {
+    stop("Dimension names must match across both axes")
+  }
+  # zero-out the lower triangle if needed
+  if (upper_only) {
+    x[lower.tri(x)] <- 0
+  }
+  # pivot data to long
+  x %>% as.data.frame() %>%
+    tibble::rownames_to_column("from") %>%
+    tidyr::pivot_longer(-from, "to", "time") %>%
+    dplyr::filter(value > 0)
+}
 
+#' Default value for `NULL`
+#'
+#' Attribution: This function is copied in its entirety from the `rlang`
+#' package.
+#'
+#' This infix function makes it easy to replace `NULL`s with a default
+#' value. It's inspired by the way that Ruby's or operation (`||`)
+#' works.
+#'
+#' @param x,y If `x` is NULL, will return `y`; otherwise returns `x`.
+#' @export
+#' @name op-null-default
+#' @examples
+#' 1 %||% 2
+#' NULL %||% 2
+`%||%` <- function(x, y) {
+  if (is_null(x)) y else x
+}
+
+#' Combine list data into a single dataframe for a date range
+#'
+#' @param x A named list of adjacency matrices. The names must be dates
+#'   in YYYY-MM-DD format.
+#' @from_date A date up from which to include entries. Defaults to NULL (all
+#'   dates).
+#' @to_date A date up to which to include entries. Defaults to NULL (all
+#'   dates).
+#' @return A dataframe object.
+combine_data <- function(x, from_date = NULL, to_date = NULL){
+
+  # set defaults
+  from_date <- from_date %||% -Inf
+  to_date   <- to_date %||% Inf
+
+  # combine list into one long data frame
   edgelist <- x %>%
+    purrr::map_df(adjacency_to_long, .id = "date") %>%
+    dplyr::mutate(dplyr::across(date, as.Date)) %>%
+    filter(date >= from_date,
+           date <= to_date,
+           ) %>%
+    dplyr::rename(weight = value) %>%
     group_by(date, from, to) %>%
     summarise(weight = sum(weight), across()) %>%
     ungroup() %>%
@@ -72,13 +164,11 @@ combine_data <- function(x){
   edgelist
 }
 
-# params <- list()
-# params$data <- Feeding_drinking_neighbour_bout
-# params$date_range <- list(as.Date("2020-8-1"), as.Date("2020-8-14"))
-# params$cow_id <- 4038
 
-df <- combine_data(params$data)
+# convert data from matrix to data frame
+df <- combine_data(params$data, params$date_range[[1]], params$date_range[[2]])
 
+# aggregate the data by dyad
 count_df_agg <- df %>%
   group_by(from, to) %>%
   summarise(count_total = sum(weight),
@@ -95,6 +185,8 @@ plot(density(count_df_agg$count_total), main="", xlab="Dyadic event counts")
 Since the edge weight is the number of counts, we use Poisson distribution as the prior as suggested by previous publication (@hart2021bison). Since we don't have any known observation biases in our data collection, we set the parameters of Poisson distribution to be the edge weight between each dyad.   
 
 $$\text{count}_{ij}^{n} \sim Poisson(W_{ij})$$
+$$a_{ij} = \log(W_{ij})$$
+$$a_{ij} \sim normal(0,1)$$
 
 where $\text{count}_{ij}^{n}$ represent the number of count of cow $i$ and cow $j$ being feeding and drinking neighbour on the $n$th day, $W_{ij}$ represent the edge weight between cow $i$ and cow $j$.  
 
@@ -104,6 +196,7 @@ Because the Bayesian analysis is impacted by the "correctness" of the prior, it 
 
 ```{r prior, fig.width=5, fig.height=3, fig.cap="Density plot of prior distribution", out.width="100%"}
 
+# Prior check
   plot(dpois(0:130, lambda = 30), 
        type = "l",
        main="Prior Poisson(lambda = 20)",
@@ -113,7 +206,7 @@ Because the Bayesian analysis is impacted by the "correctness" of the prior, it 
 ```
 # Fit the model
 
-We use Markov Chain Monte Carlo(MCMC) with the parameters: chain = 1, iter = 8000, warmup = 2000, thin = 10 to simulate 600 samples.
+We use Markov Chain Monte Carlo(MCMC) with the parameters: chain = 1, iter = 12000, warmup = 2000, thin = 10 to simulate 1000 samples.
 
 ```{stan output.var='stan_model'}
 
@@ -128,23 +221,24 @@ parameters {
   vector[num_dyads] log_edge; // Log edge weights for each dyad.
 }
 
+transformed parameters {
+  vector[num_obs] log_lambda = log_edge[dyad_ids]; 
+}
+
 model {
-  for (i in 1:num_obs){
-    count[i] ~ poisson(exp(log_edge[dyad_ids[i]]));
-  }
+  count ~ poisson(exp(log_lambda));
+  log_edge ~ normal(0, 1);
 }
 
 generated quantities {
-  int count_pred[num_obs];
-  for (i in 1:num_obs){
-  count_pred[i] = poisson_rng(exp(log_edge[dyad_ids[i]]));
-  }
+  int count_pred[num_obs] = poisson_rng(exp(log_lambda));
 }
 
 ```
 
 ```{r, include=FALSE}
 
+# fit the model 
 model_data <- list(
   num_obs = nrow(df), # Number of observations
   num_dyads = length(unique(df$dyad_id)), # Number of dyads
@@ -155,12 +249,12 @@ model_data <- list(
 posterior_sampling <- rstan::sampling(
   object = stan_model,
   data = model_data,
-  chains = 2,
-  iter = 8000,
+  chains = 1,
+  iter = 12000,
   warmup = 2000,
   thin = 10,
   seed = 123,
-  cores = getOption("mc.cores", 2L)
+  cores = getOption("mc.cores", 1L)
 )
 
 
@@ -168,11 +262,15 @@ posterior_sampling <- rstan::sampling(
 
 # Results
 
-The sampling trace can be plotted using Rstan's `traceplot` function to verify this visually and assess convergence. Figure 3 shows that the chains have reached convergence and consistant with each other.
+The sampling trace can be plotted using Rstan's `traceplot` function to verify this visually and assess convergence. Figure 3 shows that the chain has reached convergence.
 
 ```{r traceplot, fig.width=7, fig.height=4, fig.cap="Traceplot for MCMC chains", out.width="100%"}
 
-rstan::traceplot(posterior_sampling)
+# check the convergence of the simulations
+rstan::traceplot(posterior_sampling,
+                 pars = c("log_edge[1]", "log_edge[2]", 
+                          "log_edge[3]", "log_edge[4]")
+                 )
 
 ```
 
@@ -183,10 +281,6 @@ The posterior distribution can be used to check whether the simulated data from 
 count_pred <- rstan::extract(posterior_sampling)$count_pred
 num_iterations <- dim(count_pred)[1]
 
-count_df_agg <- df %>%
-  group_by(from, to) %>%
-  summarise(count_total = sum(weight),
-            dyad_id = cur_group_id())
 
 # Plot the density of the observed event counts
 plot(density(count_df_agg$count_total), main="", xlab="Dyadic event counts")
@@ -202,12 +296,11 @@ for (i in 1:20) {
 }
 
 posterior_sampling_df <- as.data.frame(posterior_sampling)
-
 ```
 
 Once we have the posterior distribution for each edge weight, we can compare all the edges weights related to our focal cow `r params$cow_id`. For the simplicity of visualization, Figure 5 only lists the top 10 strongest the weakest relationships related to our focal cow along with 95% credible interval of the edge weights. From the plot, we can have a general idea of which cows are cow `r params$cow_id`'s best feeding buddies.
 
-```{r ranking plot, fig.width=5, fig.height=4, fig.cap="Posterior distribution of edge weights related to focal cow", out.width="100%"}
+```{r ranking plot, fig.width=5, fig.height=8, fig.cap="Posterior distribution of edge weights related to focal cow", out.width="100%"}
 # We select the edge coefficients related to our focal cow
 cow_id = params$cow_id
 count_df.focus <- df %>% 
@@ -239,16 +332,16 @@ levels(posterior_sampling.focus$dyad) <- recode(
   !!!recoding
 )
 
+# calculate the 95% credible intervals
 posterior_count_CIs <- posterior_sampling.focus %>% 
   group_by(dyad) %>% 
   summarize(lower_bound = quantile(count, probs = 0.025),
             median = median(count),
             upper_bound = quantile(count, probs = 0.975)) %>%
   mutate(dyad = fct_reorder(dyad, median)) %>%
-  arrange(desc(median)) %>%
-  slice(-(11:(n()-10)))
+  arrange(desc(median)) 
 
-
+# plot all the 95% credible intervals
 posterior_count_CIs_plot <- posterior_count_CIs %>%
   ggplot(aes(x = median, y = dyad)) +
   geom_errorbarh(aes(xmax = upper_bound, xmin = lower_bound, color = dyad)) +
